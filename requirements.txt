@@ -1,9 +1,9 @@
 numpy
 pandas
-transformers
-torch 
+# transformers
+# torch 
 paddlepaddle-gpu
-cudf
+# cudf
 paddleocr 
 pymupdf 
 pillow
@@ -15,5 +15,8 @@ streamlit
 # PIL
 # re
 # csv
+# tensorflow==2.20.0 
+# transformers==4.48.0 
+# protobuf>=5.28.0
 
 # numpy pandas streamlit transformers torch paddlepaddle-gpu cudf paddleocr pymupdf  pillow fitz playsound threading time PIL re csv
