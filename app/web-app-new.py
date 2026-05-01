@@ -13,6 +13,7 @@ os.environ["CUDA_VISIBLE_DEVICES"] = ""
 
 import re
 import io
+import tempfile
 import streamlit as st
 import pandas as pd
 from pathlib import Path
@@ -92,26 +93,66 @@ def parse_chapter_index(index_text: str) -> dict:
       - "1. Getting Started"
       - "1  Getting Started"
     """
+    def clean_title(value: str) -> str:
+        value = re.sub(r'\.{2,}.*$', '', value)
+        value = re.sub(r'\s+\d+\s*$', '', value)
+        value = re.sub(r'\s+', ' ', value).strip(" .:-–—")
+        return value
+
+    def is_chapter_title(value: str) -> bool:
+        if not value:
+            return False
+        lower = value.lower()
+        if lower in {"contents", "preface"}:
+            return False
+        if lower.startswith(("part ", "section ", "chapter summary", "defined terms")):
+            return False
+        if re.match(r'^\d+(?:\.\d+)*$', value):
+            return False
+        if re.match(r'^[ivxlcdm]+$', lower):
+            return False
+        return bool(re.search(r'[A-Za-z]', value))
+
     chapter_map = {}
-    patterns = [
-        re.compile(r'chapter\s+(\d+)[:\s.\-–]+(.+)', re.IGNORECASE),
-        re.compile(r'^(\d+)[.\s)\-]+([A-Z][^\d]{3,})', re.MULTILINE),
-    ]
-    for line in index_text.split('\n'):
-        line = line.strip()
+    pending_chapter = None
+
+    for raw_line in index_text.split('\n'):
+        line = re.sub(r'\s+', ' ', raw_line.strip())
         if not line or line.startswith('---'):
             continue
-        for pat in patterns:
-            m = pat.match(line)
-            if m:
-                try:
-                    num = int(m.group(1))
-                    name = m.group(2).strip().rstrip('.')
-                    if name:
-                        chapter_map[num] = name
-                except ValueError:
-                    pass
-                break
+
+        same_line = re.match(r'^chapter\s+(\d+)\s+(.+)$', line, re.IGNORECASE)
+        split_line = re.match(r'^chapter\s+(\d+)\s*$', line, re.IGNORECASE)
+
+        if same_line:
+            num = int(same_line.group(1))
+            title = clean_title(same_line.group(2))
+            if is_chapter_title(title):
+                chapter_map[num] = title
+                pending_chapter = None
+            else:
+                pending_chapter = num
+            continue
+
+        if split_line:
+            pending_chapter = int(split_line.group(1))
+            continue
+
+        if pending_chapter is not None:
+            title = clean_title(line)
+            if is_chapter_title(title):
+                chapter_map[pending_chapter] = title
+                pending_chapter = None
+            continue
+
+        compact = re.match(r'^(\d+)\s+([A-Z][A-Za-z][^\d.]{3,})$', line)
+        if compact:
+            num = int(compact.group(1))
+            if 1 <= num <= 99 and num not in chapter_map:
+                title = clean_title(compact.group(2))
+                if is_chapter_title(title):
+                    chapter_map[num] = title
+
     return chapter_map
 
 
@@ -119,6 +160,29 @@ def chapter_num_from_exercise_id(exercise_id: str) -> int | None:
     """Extract chapter number from 'Exercise 2.3' → 2"""
     m = re.search(r'(\d+)', exercise_id)
     return int(m.group(1)) if m else None
+
+
+def save_uploaded_pdf(uploaded_file, prefix: str) -> str:
+    """Persist a Streamlit upload to a unique temp file for subprocess OCR."""
+    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf", prefix=f"{prefix}_")
+    tmp.write(uploaded_file.getvalue())
+    tmp.close()
+    return tmp.name
+
+
+def list_docs_pdfs(folder: str = "docs") -> list:
+    """List available PDF files inside the docs folder."""
+    if not os.path.exists(folder):
+        return []
+    return sorted([f for f in os.listdir(folder) if f.lower().endswith('.pdf')])
+
+
+def show_extraction_error(label: str, error: Exception):
+    st.error(f"{label} extraction failed.")
+    message = str(error).strip()
+    if message:
+        with st.expander("Details"):
+            st.code(message)
 
 
 # ─────────────────────────────────────────────
@@ -211,6 +275,7 @@ elif page == "📄 Step 1: OCR Extraction":
 
     # ── Section A: Textbook ──────────────────
     st.subheader("📖 A. Textbook PDF (Exercise Questions)")
+    docs_pdfs = list_docs_pdfs("docs")
     col1, col2 = st.columns([2, 1])
 
     with col1:
@@ -220,6 +285,16 @@ elif page == "📄 Step 1: OCR Extraction":
             key="book_pdf_upload",
             help="The model will extract exercise questions (e.g., 'Exercise 2.1')",
         )
+        if docs_pdfs:
+            book_doc_choice = st.selectbox(
+                "Or choose a PDF from the repo docs folder",
+                ["None"] + docs_pdfs,
+                key="book_pdf_docs",
+            )
+            if book_doc_choice != "None":
+                st.info(f"Using `docs/{book_doc_choice}` as textbook PDF.")
+        else:
+            book_doc_choice = "None"
     with col2:
         st.markdown("**Page range for exercises:**")
         book_start = st.number_input("Start page", min_value=0, value=0, key="book_start")
@@ -256,6 +331,16 @@ elif page == "📄 Step 1: OCR Extraction":
             key="paper_pdf_upload",
             help="The paper from which we extract numbered questions (Q1, Q2, ...)",
         )
+        if docs_pdfs:
+            paper_doc_choice = st.selectbox(
+                "Or choose a PDF from the repo docs folder",
+                ["None"] + docs_pdfs,
+                key="paper_pdf_docs",
+            )
+            if paper_doc_choice != "None":
+                st.info(f"Using `docs/{paper_doc_choice}` as question paper PDF.")
+        else:
+            paper_doc_choice = "None"
     with col6:
         st.markdown("**Page range:**")
         paper_start = st.number_input("Start page", min_value=0, value=0, key="paper_start")
@@ -269,22 +354,27 @@ elif page == "📄 Step 1: OCR Extraction":
 
         if pipeline is None:
             st.error("Pipeline not initialised. Check OCR dependencies.")
-        elif book_pdf is None and paper_pdf is None:
-            st.warning("Please upload at least one PDF (textbook or question paper).")
+        elif (
+            book_pdf is None
+            and paper_pdf is None
+            and book_doc_choice == "None"
+            and paper_doc_choice == "None"
+        ):
+            st.warning("Please upload at least one PDF or choose one from the docs folder.")
         else:
             progress = st.progress(0)
             status = st.empty()
+            successful_extractions = 0
 
             # ── Extract index (chapter names) ──
             chapter_map = {}
             if index_pdf is not None:
                 status.info("🗂️ Extracting chapter names from index…")
-                tmp_idx = "temp_index.pdf"
-                with open(tmp_idx, "wb") as f:
-                    f.write(index_pdf.getvalue())
+                tmp_idx = save_uploaded_pdf(index_pdf, "index")
                 try:
                     raw_index = pipeline.ocr_processor.extract_from_pdf(tmp_idx, idx_start, idx_end)
                     chapter_map = parse_chapter_index(raw_index)
+                    successful_extractions += 1
                     if chapter_map:
                         st.success(f"✅ Found {len(chapter_map)} chapter names from index.")
                     else:
@@ -293,7 +383,7 @@ elif page == "📄 Step 1: OCR Extraction":
                             "Exercise questions will use the exercise ID as chapter label."
                         )
                 except Exception as e:
-                    st.error(f"Index extraction failed: {e}")
+                    show_extraction_error("Index", e)
                 finally:
                     if os.path.exists(tmp_idx):
                         os.remove(tmp_idx)
@@ -302,14 +392,20 @@ elif page == "📄 Step 1: OCR Extraction":
 
             # ── Extract exercises from textbook ──
             exercise_rows = []
+            book_src_path = None
+            delete_book_tmp = False
             if book_pdf is not None:
+                book_src_path = save_uploaded_pdf(book_pdf, "book")
+                delete_book_tmp = True
+            elif book_doc_choice != "None":
+                book_src_path = os.path.join("docs", book_doc_choice)
+
+            if book_src_path is not None:
                 status.info("📖 Extracting exercise questions from textbook…")
-                tmp_book = "temp_book.pdf"
-                with open(tmp_book, "wb") as f:
-                    f.write(book_pdf.getvalue())
                 try:
-                    raw_text = pipeline.ocr_processor.extract_from_pdf(tmp_book, book_start, book_end)
+                    raw_text = pipeline.ocr_processor.extract_from_pdf(book_src_path, book_start, book_end)
                     exercises = pipeline.ocr_processor.extract_exercise_questions(raw_text)
+                    successful_extractions += 1
 
                     for q in exercises:
                         chapter_num = chapter_num_from_exercise_id(q.get("exercise_id", ""))
@@ -325,10 +421,10 @@ elif page == "📄 Step 1: OCR Extraction":
                         })
                     st.success(f"✅ Extracted {len(exercise_rows)} exercise questions.")
                 except Exception as e:
-                    st.error(f"Textbook extraction failed: {e}")
+                    show_extraction_error("Textbook", e)
                 finally:
-                    if os.path.exists(tmp_book):
-                        os.remove(tmp_book)
+                    if delete_book_tmp and os.path.exists(book_src_path):
+                        os.remove(book_src_path)
 
             progress.progress(60)
             if exercise_rows:
@@ -336,14 +432,20 @@ elif page == "📄 Step 1: OCR Extraction":
 
             # ── Extract question paper ──
             paper_rows = []
+            paper_src_path = None
+            delete_paper_tmp = False
             if paper_pdf is not None:
+                paper_src_path = save_uploaded_pdf(paper_pdf, "paper")
+                delete_paper_tmp = True
+            elif paper_doc_choice != "None":
+                paper_src_path = os.path.join("docs", paper_doc_choice)
+
+            if paper_src_path is not None:
                 status.info("📋 Extracting questions from question paper…")
-                tmp_paper = "temp_paper.pdf"
-                with open(tmp_paper, "wb") as f:
-                    f.write(paper_pdf.getvalue())
                 try:
-                    raw_text = pipeline.ocr_processor.extract_from_pdf(tmp_paper, paper_start, paper_end)
+                    raw_text = pipeline.ocr_processor.extract_from_pdf(paper_src_path, paper_start, paper_end)
                     questions = pipeline.ocr_processor.extract_question_papers(raw_text)
+                    successful_extractions += 1
 
                     for q in questions:
                         paper_rows.append({
@@ -352,17 +454,20 @@ elif page == "📄 Step 1: OCR Extraction":
                         })
                     st.success(f"✅ Extracted {len(paper_rows)} question paper questions.")
                 except Exception as e:
-                    st.error(f"Question paper extraction failed: {e}")
+                    show_extraction_error("Question paper", e)
                 finally:
-                    if os.path.exists(tmp_paper):
-                        os.remove(tmp_paper)
+                    if delete_paper_tmp and os.path.exists(paper_src_path):
+                        os.remove(paper_src_path)
 
             progress.progress(90)
             if paper_rows:
                 st.session_state.paper_df = pd.DataFrame(paper_rows)
 
             progress.progress(100)
-            status.success("✅ OCR extraction complete! Scroll down to review & download CSVs.")
+            if successful_extractions:
+                status.success("✅ Extraction complete. Scroll down to review & download CSVs.")
+            else:
+                status.error("No files were extracted successfully. Open the error details above.")
 
     # ── Show results & download ──────────────
     if st.session_state.exercise_df is not None:
@@ -473,7 +578,9 @@ elif page == "🧠 Step 2: Train Model":
                 )
 
             if st.button("🚀 Start Training", key="train_btn", type="primary"):
-                tmp_csv = "temp_training_data.csv"
+                tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".csv", prefix="training_")
+                tmp_csv = tmp.name
+                tmp.close()
                 train_df.to_csv(tmp_csv, index=False)
                 try:
                     progress = st.progress(0)
@@ -493,7 +600,7 @@ elif page == "🧠 Step 2: Train Model":
 
                     # Save model
                     model_dir = "data/models/bert_model"
-                    st.session_state.pipeline._get_bert_analyzer().save_model(model_dir)
+                    st.session_state.pipeline.save_bert_model(model_dir)
                     progress.progress(100)
 
                     status.success(f"✅ Model trained and saved to `{model_dir}`!")
@@ -552,6 +659,7 @@ elif page == "📊 Step 3: Analyze & Results":
         paper_df = None
 
     if paper_df is not None:
+        batch_size = st.slider("Prediction batch size", 4, 32, 8, key="prediction_batch_size")
         if st.button("🔬 Classify Questions", key="classify_btn", type="primary"):
             if not st.session_state.model_trained:
                 st.error("❌ Train the model in Step 2 before classifying.")
@@ -561,7 +669,10 @@ elif page == "📊 Step 3: Analyze & Results":
                     status.info("🧠 Classifying questions with BERT…")
 
                     questions = paper_df["Question Text"].tolist()
-                    predictions = st.session_state.pipeline._get_bert_analyzer().predict(questions)
+                    predictions = st.session_state.pipeline.classify_questions(
+                        questions,
+                        batch_size=batch_size,
+                    )
 
                     result_df = paper_df.copy()
                     result_df["Predicted Chapter"] = [p["predicted_chapter"] for p in predictions]

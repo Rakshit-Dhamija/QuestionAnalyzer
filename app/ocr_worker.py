@@ -183,25 +183,44 @@ def extract_from_pdf(pdf_path, page_start=0, page_end=None, lang="en"):
     from PIL import Image
 
     extracted_text = ""
+    backend = "embedded"
+    pages_processed = 0
 
     with fitz.open(pdf_path) as pdf:
         total_pages = len(pdf)
         end_page = page_end if page_end is not None else total_pages
+        start_page = max(0, page_start)
+        end_page = min(end_page, total_pages)
 
-        for pg_num in range(page_start, min(end_page, total_pages)):
+        if start_page >= end_page:
+            return {
+                "text": "",
+                "backend": "none",
+                "pages_processed": 0,
+                "total_pages": total_pages,
+            }
+
+        for pg_num in range(start_page, end_page):
             page_text = pdf[pg_num].get_text("text").strip()
             if page_text:
                 extracted_text += f"\n--- Page {pg_num + 1} ---\n{page_text}\n"
+                pages_processed += 1
 
         if extracted_text.strip():
             print("[OCR] Used embedded PDF text; PaddleOCR was not needed.")
-            return extracted_text
+            return {
+                "text": extracted_text,
+                "backend": backend,
+                "pages_processed": pages_processed,
+                "total_pages": total_pages,
+            }
 
         print("[OCR] Initializing PaddleOCR on CPU... (worker first use may take a moment)")
         ocr = _create_ocr(lang)
+        backend = "paddleocr"
         print("[OCR] PaddleOCR initialized successfully in worker.")
 
-        for pg_num in range(page_start, min(end_page, total_pages)):
+        for pg_num in range(start_page, end_page):
             page = pdf[pg_num]
 
             mat = fitz.Matrix(1.5, 1.5)
@@ -213,8 +232,14 @@ def extract_from_pdf(pdf_path, page_start=0, page_end=None, lang="en"):
             extracted_text += f"\n--- Page {pg_num + 1} ---\n"
             for text in _texts_from_ocr_result(result):
                 extracted_text += text + "\n"
+            pages_processed += 1
 
-    return extracted_text
+    return {
+        "text": extracted_text,
+        "backend": backend,
+        "pages_processed": pages_processed,
+        "total_pages": total_pages,
+    }
 
 
 def main():
@@ -228,8 +253,8 @@ def main():
 
     _force_cpu()
     try:
-        text = extract_from_pdf(args.pdf, args.start, args.end, args.lang)
-        payload = {"ok": True, "text": text}
+        result = extract_from_pdf(args.pdf, args.start, args.end, args.lang)
+        payload = {"ok": True, **result}
     except Exception as e:
         payload = {
             "ok": False,

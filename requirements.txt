@@ -2,7 +2,7 @@ numpy
 pandas
 # transformers
 # torch 
-paddlepaddle-gpu
+# paddlepaddle-gpu
 # cudf
 paddlepaddle==3.3.0 -i https://www.paddlepaddle.org.cn/packages/stable/cpu/
 paddleocr==3.3.2

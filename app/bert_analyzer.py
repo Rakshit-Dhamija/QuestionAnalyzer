@@ -190,12 +190,13 @@ class BERTQuestionAnalyzer:
             print(f"Epoch {epoch+1}/{num_epochs} - Train Loss: {train_loss/len(train_loader):.4f}, "
                   f"Val Loss: {val_loss/len(val_loader):.4f}")
     
-    def predict(self, questions: List[str]) -> List[Dict[str, str]]:
+    def predict(self, questions: List[str], batch_size: int = 16) -> List[Dict[str, str]]:
         """
         Predict chapter labels for questions
         
         Args:
             questions: List of question texts
+            batch_size: Batch size for prediction
             
         Returns:
             List of dicts with 'question', 'predicted_chapter', and 'confidence'
@@ -206,26 +207,34 @@ class BERTQuestionAnalyzer:
         self.model.eval()
         results = []
         
-        with torch.no_grad():
-            for question in questions:
-                # Tokenize
-                encoding = self.tokenizer.encode_plus(
-                    question,
-                    max_length=self.max_length,
-                    padding='max_length',
-                    truncation=True,
-                    return_tensors='pt'
-                )
-                
-                input_ids = encoding['input_ids'].to(self.device)
-                attention_mask = encoding['attention_mask'].to(self.device)
-                
-                # Predict
+        # Process in batches
+        for i in range(0, len(questions), batch_size):
+            batch_questions = questions[i:i + batch_size]
+            
+            # Tokenize batch
+            encodings = self.tokenizer.batch_encode_plus(
+                batch_questions,
+                max_length=self.max_length,
+                padding='max_length',
+                truncation=True,
+                return_tensors='pt'
+            )
+            
+            input_ids = encodings['input_ids'].to(self.device)
+            attention_mask = encodings['attention_mask'].to(self.device)
+            
+            # Predict
+            with torch.no_grad():
                 logits = self.model(input_ids, attention_mask)
                 probabilities = torch.softmax(logits, dim=1)
                 
-                predicted_label_idx = torch.argmax(probabilities, dim=1).item()
-                confidence = probabilities[0][predicted_label_idx].item()
+                predicted_label_indices = torch.argmax(probabilities, dim=1).cpu().numpy()
+                confidences = probabilities.max(dim=1).values.cpu().numpy()
+            
+            # Process results
+            for j, question in enumerate(batch_questions):
+                predicted_label_idx = predicted_label_indices[j]
+                confidence = confidences[j]
                 
                 predicted_chapter = self.reverse_label_map[predicted_label_idx]
                 

@@ -55,6 +55,18 @@ Args:
         print("[BERT] Starting model training...")
         bert_analyzer.train(questions, labels, **kwargs)
         print("[BERT] Training completed!")
+
+    def save_bert_model(self, model_dir: str):
+        """Save the currently trained BERT analyzer."""
+        self._get_bert_analyzer().save_model(model_dir)
+
+    def load_bert_model(self, model_dir: str):
+        """Load a previously saved BERT analyzer."""
+        self._get_bert_analyzer().load_model(model_dir)
+
+    def classify_questions(self, questions: List[str], batch_size: int = 16) -> List[Dict[str, str]]:
+        """Classify questions in batches while hiding analyzer internals from the UI."""
+        return self._get_bert_analyzer().predict(questions, batch_size=batch_size)
     
     def process_pdf(self, pdf_path: str, extraction_type: str = 'both',
                    page_start: int = 0, page_end: Optional[int] = None) -> Dict:
@@ -97,7 +109,7 @@ Args:
         if extraction_type in ['exercise', 'both'] and extracted_data['exercises']:
             print(f"[BERT] Analyzing {len(extracted_data['exercises'])} exercise questions...")
             exercise_texts = [q['question_text'] for q in extracted_data['exercises']]
-            analyzed = self._get_bert_analyzer().predict(exercise_texts)
+            analyzed = self.classify_questions(exercise_texts)
             
             # Merge with original extraction
             for original, analyzed_result in zip(extracted_data['exercises'], analyzed):
@@ -112,7 +124,7 @@ Args:
         if extraction_type in ['paper', 'both'] and extracted_data['papers']:
             print(f"[BERT] Analyzing {len(extracted_data['papers'])} question paper questions...")
             paper_texts = [q['question_text'] for q in extracted_data['papers']]
-            analyzed = self._get_bert_analyzer().predict(paper_texts)
+            analyzed = self.classify_questions(paper_texts)
             
             # Merge with original extraction
             for original, analyzed_result in zip(extracted_data['papers'], analyzed):
