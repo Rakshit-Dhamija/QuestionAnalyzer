@@ -9,7 +9,6 @@ from datetime import datetime
 import os
 
 from .ocr_processor import OCRProcessor
-from .bert_analyzer import BERTQuestionAnalyzer
 
 
 class QuestionAnalysisPipeline:
@@ -29,8 +28,17 @@ Args:
             print(f"[WARNING] OCR processor initialization deferred: {e}")
             self.ocr_processor = None
         
-        self.bert_analyzer = BERTQuestionAnalyzer(bert_model_name)
+        self.bert_model_name = bert_model_name
+        self.bert_analyzer = None
         self.extraction_type = None  # 'exercise' or 'paper'
+
+    def _get_bert_analyzer(self):
+        """Load PyTorch/BERT only when training or prediction is actually needed."""
+        if self.bert_analyzer is None:
+            from .bert_analyzer import BERTQuestionAnalyzer
+
+            self.bert_analyzer = BERTQuestionAnalyzer(self.bert_model_name)
+        return self.bert_analyzer
     
     def train_bert_model(self, training_csv_path: str, **kwargs):
         """
@@ -41,10 +49,11 @@ Args:
             **kwargs: Additional arguments for training (batch_size, num_epochs, learning_rate)
         """
         print("[BERT] Loading training data...")
-        questions, labels = self.bert_analyzer.load_training_data(training_csv_path)
+        bert_analyzer = self._get_bert_analyzer()
+        questions, labels = bert_analyzer.load_training_data(training_csv_path)
         
         print("[BERT] Starting model training...")
-        self.bert_analyzer.train(questions, labels, **kwargs)
+        bert_analyzer.train(questions, labels, **kwargs)
         print("[BERT] Training completed!")
     
     def process_pdf(self, pdf_path: str, extraction_type: str = 'both',
@@ -88,7 +97,7 @@ Args:
         if extraction_type in ['exercise', 'both'] and extracted_data['exercises']:
             print(f"[BERT] Analyzing {len(extracted_data['exercises'])} exercise questions...")
             exercise_texts = [q['question_text'] for q in extracted_data['exercises']]
-            analyzed = self.bert_analyzer.predict(exercise_texts)
+            analyzed = self._get_bert_analyzer().predict(exercise_texts)
             
             # Merge with original extraction
             for original, analyzed_result in zip(extracted_data['exercises'], analyzed):
@@ -103,7 +112,7 @@ Args:
         if extraction_type in ['paper', 'both'] and extracted_data['papers']:
             print(f"[BERT] Analyzing {len(extracted_data['papers'])} question paper questions...")
             paper_texts = [q['question_text'] for q in extracted_data['papers']]
-            analyzed = self.bert_analyzer.predict(paper_texts)
+            analyzed = self._get_bert_analyzer().predict(paper_texts)
             
             # Merge with original extraction
             for original, analyzed_result in zip(extracted_data['papers'], analyzed):

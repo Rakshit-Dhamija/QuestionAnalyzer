@@ -10,13 +10,20 @@ import os
 os.environ["USE_TF"] = "0"
 os.environ["USE_FLAX"] = "0"
 os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"
+os.environ["CUDA_VISIBLE_DEVICES"] = ""
 
 import torch
+try:
+    torch.classes.__path__ = []
+except Exception:
+    pass
+
 import torch.nn as nn
 from transformers import BertTokenizer, BertModel
 from torch.utils.data import Dataset
 import pandas as pd
 from typing import List, Dict, Tuple
+import json
 
 
 class QuestionDataset(Dataset):
@@ -214,8 +221,7 @@ class BERTQuestionAnalyzer:
                 attention_mask = encoding['attention_mask'].to(self.device)
                 
                 # Predict
-                outputs = self.model(input_ids, attention_mask)
-                logits = outputs[0]
+                logits = self.model(input_ids, attention_mask)
                 probabilities = torch.softmax(logits, dim=1)
                 
                 predicted_label_idx = torch.argmax(probabilities, dim=1).item()
@@ -233,23 +239,41 @@ class BERTQuestionAnalyzer:
     
     def save_model(self, save_path: str):
         """Save trained model"""
+        if self.model is None:
+            raise ValueError("Model not trained. Call train() before save_model().")
+
         os.makedirs(save_path, exist_ok=True)
-        self.model.save_pretrained(save_path)
+        torch.save(self.model.state_dict(), os.path.join(save_path, 'model_state_dict.pt'))
         self.tokenizer.save_pretrained(save_path)
         
-        # Save label maps
-        import json
         with open(os.path.join(save_path, 'label_map.json'), 'w') as f:
             json.dump(self.label_map, f)
+
+        config = {
+            'model_name': self.model_name,
+            'num_classes': len(self.label_map),
+            'max_length': self.max_length,
+        }
+        with open(os.path.join(save_path, 'model_config.json'), 'w') as f:
+            json.dump(config, f)
     
     def load_model(self, model_path: str):
         """Load trained model"""
-        import json
-        num_classes = len(self.label_map) if self.label_map else 29  # Default from your data
-        
-        self.model = BERTClassifier(self.model_name, num_classes).to(self.device)
-        self.model.load_state_dict(torch.load(os.path.join(model_path, 'pytorch_model.bin')))
-        
-        with open(os.path.join(model_path, 'label_map.json'), 'r') as f:
+        label_map_path = os.path.join(model_path, 'label_map.json')
+        with open(label_map_path, 'r') as f:
             self.label_map = json.load(f)
             self.reverse_label_map = {int(v): k for k, v in self.label_map.items()}
+
+        config_path = os.path.join(model_path, 'model_config.json')
+        if os.path.exists(config_path):
+            with open(config_path, 'r') as f:
+                config = json.load(f)
+            self.model_name = config.get('model_name', self.model_name)
+            self.max_length = config.get('max_length', self.max_length)
+
+        num_classes = len(self.label_map)
+        
+        self.model = BERTClassifier(self.model_name, num_classes).to(self.device)
+        state_path = os.path.join(model_path, 'model_state_dict.pt')
+        self.model.load_state_dict(torch.load(state_path, map_location=self.device))
+        self.model.eval()

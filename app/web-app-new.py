@@ -9,6 +9,7 @@ import os
 os.environ["USE_TF"] = "0"
 os.environ["USE_FLAX"] = "0"
 os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"
+os.environ["CUDA_VISIBLE_DEVICES"] = ""
 
 import re
 import io
@@ -492,7 +493,7 @@ elif page == "🧠 Step 2: Train Model":
 
                     # Save model
                     model_dir = "data/models/bert_model"
-                    st.session_state.pipeline.bert_analyzer.save_model(model_dir)
+                    st.session_state.pipeline._get_bert_analyzer().save_model(model_dir)
                     progress.progress(100)
 
                     status.success(f"✅ Model trained and saved to `{model_dir}`!")
@@ -560,7 +561,7 @@ elif page == "📊 Step 3: Analyze & Results":
                     status.info("🧠 Classifying questions with BERT…")
 
                     questions = paper_df["Question Text"].tolist()
-                    predictions = st.session_state.pipeline.bert_analyzer.predict(questions)
+                    predictions = st.session_state.pipeline._get_bert_analyzer().predict(questions)
 
                     result_df = paper_df.copy()
                     result_df["Predicted Chapter"] = [p["predicted_chapter"] for p in predictions]

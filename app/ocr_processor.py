@@ -4,12 +4,21 @@ Handles PDF extraction for both exercise questions and question papers
 """
 
 import csv
+import json
+import os
 import re
-import fitz  # PyMuPDF
-import numpy as np
-from PIL import Image
-from paddleocr import PaddleOCR
+import subprocess
+import sys
+import tempfile
 from typing import List, Tuple, Dict
+
+
+def _disable_paddle_gpu():
+    """Keep PaddleOCR on CPU to avoid Paddle/PyTorch CUDA pybind conflicts."""
+    os.environ["CUDA_VISIBLE_DEVICES"] = ""
+    os.environ["FLAGS_selected_gpus"] = ""
+    os.environ["PADDLE_PDX_DEVICE"] = "cpu"
+    os.environ["PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK"] = "True"
 
 
 class OCRProcessor:
@@ -23,23 +32,84 @@ class OCRProcessor:
         self.ocr_error = None
     
     def _initialize_ocr(self):
-        """Lazy initialize PaddleOCR on first use"""
-        if self.ocr_initialized:
-            return
-        
+        """Validate that OCR can be run in the isolated worker process."""
         if self.ocr_error:
             raise RuntimeError(f"OCR initialization failed: {self.ocr_error}")
-        
+
+    def _create_ocr_instance(self):
+        """
+        PaddleOCR must not be initialized in the Streamlit/PyTorch process.
+        OCR is executed by app.ocr_worker in a separate Python process.
+        """
+        raise RuntimeError("PaddleOCR is initialized in the isolated OCR worker process.")
+
+    def _extract_from_pdf_in_worker(
+        self, pdf_path: str, page_start: int = 0, page_end: int = None
+    ) -> str:
+        """Run PaddleOCR in a separate process to avoid Paddle/PyTorch pybind conflicts."""
+        _disable_paddle_gpu()
+
+        output_file = tempfile.NamedTemporaryFile(delete=False, suffix=".json")
+        output_path = output_file.name
+        output_file.close()
+
+        env = os.environ.copy()
+        env["CUDA_VISIBLE_DEVICES"] = ""
+        env["FLAGS_selected_gpus"] = ""
+        env["PADDLE_PDX_DEVICE"] = "cpu"
+        env["PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK"] = "True"
+        env["FLAGS_use_mkldnn"] = "0"
+        env["FLAGS_enable_mkldnn"] = "0"
+        env["ONEDNN_VERBOSE"] = "0"
+
+        command = [
+            sys.executable,
+            os.path.join(os.path.dirname(__file__), "ocr_worker.py"),
+            "--pdf",
+            os.path.abspath(pdf_path),
+            "--start",
+            str(page_start),
+            "--lang",
+            self.lang,
+            "--out",
+            output_path,
+        ]
+        if page_end is not None:
+            command.extend(["--end", str(page_end)])
+
         try:
-            print("[OCR] Initializing PaddleOCR... (first use, may take a moment)")
-            self.ocr = PaddleOCR(use_angle_cls=True, lang=self.lang)
-            self.ocr_initialized = True
-            print("[OCR] PaddleOCR initialized successfully!")
-        except Exception as e:
-            self.ocr_error = str(e)
-            print(f"[ERROR] Failed to initialize PaddleOCR: {e}")
+            print("[OCR] Running PaddleOCR in isolated CPU worker...")
+            completed = subprocess.run(
+                command,
+                capture_output=True,
+                text=True,
+                env=env,
+                cwd=os.path.abspath(os.path.join(os.path.dirname(__file__), "..")),
+            )
+            payload = {}
+            if os.path.getsize(output_path) > 0:
+                with open(output_path, "r", encoding="utf-8") as f:
+                    payload = json.load(f)
+
+            if not payload.get("ok"):
+                detail = (
+                    payload.get("traceback")
+                    or payload.get("error")
+                    or (completed.stderr or completed.stdout or "").strip()
+                )
+                raise RuntimeError(detail or f"OCR worker exited with code {completed.returncode}")
+
+            if completed.returncode != 0:
+                detail = (completed.stderr or completed.stdout or "").strip()
+                raise RuntimeError(detail or f"OCR worker exited with code {completed.returncode}")
+
+            return payload.get("text", "")
+        except Exception:
             raise
-    
+        finally:
+            if os.path.exists(output_path):
+                os.remove(output_path)
+
     def extract_from_pdf(self, pdf_path: str, page_start: int = 0, page_end: int = None) -> str:
         """
         Extract raw text from PDF pages
@@ -52,37 +122,8 @@ class OCRProcessor:
         Returns:
             Extracted text content
         """
-        # Initialize OCR on first use
         self._initialize_ocr()
-        
-        extracted_text = ""
-        
-        with fitz.open(pdf_path) as pdf:
-            total_pages = len(pdf)
-            end_page = page_end if page_end else total_pages
-            
-            for pg_num in range(page_start, min(end_page, total_pages)):
-                page = pdf[pg_num]
-                
-                # Render page at higher DPI for better OCR
-                mat = fitz.Matrix(1.5, 1.5)
-                pm = page.get_pixmap(matrix=mat, alpha=False)
-                
-                # Convert to numpy array
-                img = np.array(Image.frombytes("RGB", [pm.width, pm.height], pm.samples))
-                
-                # Perform OCR
-                result = self.ocr.ocr(img, cls=True)
-                
-                extracted_text += f"\n--- Page {pg_num + 1} ---\n"
-                
-                if result:
-                    for line in result:
-                        for entry in line:
-                            text = entry[1][0].strip()
-                            extracted_text += text + "\n"
-        
-        return extracted_text
+        return self._extract_from_pdf_in_worker(pdf_path, page_start, page_end)
     
     def extract_exercise_questions(self, extracted_text: str) -> List[Dict[str, str]]:
         """

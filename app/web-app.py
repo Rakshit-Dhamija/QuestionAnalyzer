@@ -5,19 +5,26 @@ import os
 os.environ["USE_TF"] = "0"
 os.environ["USE_FLAX"] = "0"
 os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"
+os.environ["CUDA_VISIBLE_DEVICES"] = ""
+os.environ["FLAGS_selected_gpus"] = ""
+os.environ["PADDLE_PDX_DEVICE"] = "cpu"
 
 import streamlit as st
 import pandas as pd
 import torch
+try:
+    torch.classes.__path__ = []
+except Exception:
+    pass
+
 from transformers import BertTokenizer, BertModel
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader, random_split
-from paddleocr import PaddleOCR
 import numpy as np
 from PIL import Image
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+device = torch.device('cpu')
 file_path = 'final_questions.csv'
 df = pd.read_csv(file_path)
 questions = df['Question Text'].tolist()
@@ -138,9 +145,23 @@ def question_to_class(question):
     predicted_class = predict_question(question, SModel, tokenizer, device)
     return new_map_to_label[predicted_class]
 
-# Initialize OCR
+# Initialize OCR (CPU-only to avoid pybind11 conflict with PyTorch GPU types)
 @st.cache_resource
 def load_ocr():
+    from paddleocr import PaddleOCR
+
+    # Try PaddleOCR 3.x API first
+    try:
+        return PaddleOCR(use_angle_cls=True, lang='en', device='cpu')
+    except TypeError:
+        pass
+    # Try PaddleOCR 2.x API
+    try:
+        return PaddleOCR(use_angle_cls=True, lang='en', use_gpu=False)
+    except TypeError:
+        pass
+    # Last resort: hide CUDA devices
+    os.environ['CUDA_VISIBLE_DEVICES'] = ''
     return PaddleOCR(use_angle_cls=True, lang='en')
 
 try:
