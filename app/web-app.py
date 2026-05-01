@@ -1,3 +1,11 @@
+import os
+
+# Must be set BEFORE importing transformers to prevent it from loading TensorFlow.
+# TensorFlow conflicts with paddlepaddle-gpu due to incompatible protobuf versions.
+os.environ["USE_TF"] = "0"
+os.environ["USE_FLAX"] = "0"
+os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"
+
 import streamlit as st
 import pandas as pd
 import torch
@@ -5,6 +13,10 @@ from transformers import BertTokenizer, BertModel
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader, random_split
+from paddleocr import PaddleOCR
+import numpy as np
+from PIL import Image
+
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 file_path = 'final_questions.csv'
 df = pd.read_csv(file_path)
@@ -126,15 +138,63 @@ def question_to_class(question):
     predicted_class = predict_question(question, SModel, tokenizer, device)
     return new_map_to_label[predicted_class]
 
+# Initialize OCR
+@st.cache_resource
+def load_ocr():
+    return PaddleOCR(use_angle_cls=True, lang='en')
+
+try:
+    ocr = load_ocr()
+except Exception as e:
+    st.error(f"Failed to initialize OCR: {e}")
+    ocr = None
+
 # Streamlit app layout
-st.title("Question  Analysis App")
-st.write("Ask me any question, and I'll do my best to classify it!")
+st.title("Question Analysis App")
+st.write("Ask me any question or upload an image, and I'll do my best to classify it!")
 
-# Input field for the user's question
-question = st.text_input("Enter your question:")
+tab1, tab2 = st.tabs(["Text Input", "Image Upload (OCR)"])
 
-# Generate and display the answer
-if question:
-    answer = question_to_class(question)
-    st.write("### Name of the chapter:")
-    st.write(answer)
+with tab1:
+    # Input field for the user's question
+    question = st.text_input("Enter your question:")
+
+    # Generate and display the answer
+    if question:
+        answer = question_to_class(question)
+        st.write("### Name of the chapter:")
+        st.write(answer)
+
+with tab2:
+    uploaded_file = st.file_uploader("Upload an image of a question", type=["png", "jpg", "jpeg"])
+    
+    if uploaded_file is not None:
+        image = Image.open(uploaded_file).convert('RGB')
+        st.image(image, caption='Uploaded Image', use_container_width=True)
+        
+        if st.button("Extract Text & Classify"):
+            if ocr is None:
+                st.error("OCR is not available.")
+            else:
+                with st.spinner("Extracting text using OCR..."):
+                    img_array = np.array(image)
+                    result = ocr.ocr(img_array, cls=True)
+                    
+                    extracted_text = ""
+                    if result and result[0]:
+                        for line in result[0]:
+                            extracted_text += line[1][0] + " "
+                    
+                    extracted_text = extracted_text.strip()
+                
+                if extracted_text:
+                    st.write("### Extracted Text:")
+                    st.info(extracted_text)
+                    
+                    with st.spinner("Classifying question..."):
+                        answer = question_to_class(extracted_text)
+                    
+                    st.write("### Name of the chapter:")
+                    st.success(answer)
+                else:
+                    st.error("No text could be extracted from the image. Please try another image.")

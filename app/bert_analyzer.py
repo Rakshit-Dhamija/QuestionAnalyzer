@@ -3,13 +3,20 @@ BERT Classification Module
 Handles question classification and analysis using BERT model
 """
 
+import os
+
+# Must be set BEFORE importing transformers to prevent it from loading TensorFlow.
+# TensorFlow conflicts with paddlepaddle-gpu due to incompatible protobuf versions.
+os.environ["USE_TF"] = "0"
+os.environ["USE_FLAX"] = "0"
+os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"
+
 import torch
 import torch.nn as nn
 from transformers import BertTokenizer, BertModel
 from torch.utils.data import Dataset
 import pandas as pd
 from typing import List, Dict, Tuple
-import os
 
 
 class QuestionDataset(Dataset):
