@@ -1,0 +1,28 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+numpy = "*"
+pandas = "*"
+transformers = "*"
+torch = "*"
+paddlepaddle-gpu = "*"
+cudf = "*"
+paddleocr = "*"
+pymupdf = "*"
+pillow = "*"
+fitz = "*"
+playsound = "*"
+streamlit = "*"
+threading = "*"
+time = "*"
+pil = "*"
+re = "*"
+csv = "*"
+
+[dev-packages]
+
+[requires]
+python_version = "3.11"

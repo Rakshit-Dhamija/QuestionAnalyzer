@@ -1,0 +1,19 @@
+numpy
+pandas
+transformers
+torch 
+paddlepaddle-gpu
+cudf
+paddleocr 
+pymupdf 
+pillow
+fitz  # PyMuPDF
+# playsound
+streamlit
+# threading
+# time
+# PIL
+# re
+# csv
+
+# numpy pandas streamlit transformers torch paddlepaddle-gpu cudf paddleocr pymupdf  pillow fitz playsound threading time PIL re csv

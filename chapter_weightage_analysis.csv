@@ -1,0 +1,30 @@
+Chapter,Number_of_Questions,Weightage_Percentage
+Functions,148,9.66
+Objects and Classes,135,8.81
+Operator Overloading,85,5.55
+Expressions,76,4.96
+"Strings, Vectors, and Arrays",75,4.9
+Sequential Containers,74,4.83
+Object-Oriented Programming,70,4.57
+Templates,67,4.37
+Copy Control,57,3.72
+Streams and IO Library,57,3.72
+Statements,50,3.26
+Virtual Functions,43,2.81
+Pointers,43,2.81
+Generic Algorithms,42,2.74
+Variable and Basic types,42,2.74
+"String,Vectors, and Arrays",39,2.55
+Specialised Library Facilities,39,2.55
+Generic Algorithms and STL,38,2.48
+Getting started,38,2.48
+C++ Programming Basics,37,2.42
+Loops and Decisions,37,2.42
+Associative Containers,37,2.42
+Pointers and Dynamic Memory,33,2.15
+Inheritance,33,2.15
+Tools for Large Programs,30,1.96
+Templates ,28,1.83
+Structures,27,1.76
+Multifile Programs,27,1.76
+Specialised Tools and Techniques,25,1.63

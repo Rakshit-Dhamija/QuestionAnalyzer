@@ -1,0 +1,511 @@
+Page Number,Question Text,Chapter
+1,"1. Pascal, BASIC, and C are p.",The Big Picture
+1,2. A widget is to the blueprint for a widget as an object is to,The Big Picture
+1,3. The two major components of an object are,The Big Picture
+1,"4. In C++, a function contained within a class is called",The Big Picture
+2,5. Protecting data from access by unauthorized functions is called.,The Big Picture
+2,6. Which of the following are good reasons to use an object-oriented language?,The Big Picture
+2,8. True or false: A C++ program is similar to a C program except for the details of.,The Big Picture
+2,9. Bundling data and functions together is called,The Big Picture
+2,"10. When a language has the capability to produce new data types, it is said to be",The Big Picture
+2,"11. True or false: You can easily tell, from any two lines of code, whether a pro-",The Big Picture
+2,12. The ability of a function or operator to act in different ways on different data,The Big Picture
+2,13. A normal C++ operator that acts in special ways on newly defined data types is,The Big Picture
+2,14. Memorizing the new terms used in C++ is,The Big Picture
+3,15. The Unified Modeling Language is,The Big Picture
+5,1. Dividing a program into functions,C++ Programming Basics
+5,2. A function name must be followed by,C++ Programming Basics
+5,3. A function body is delimited by.,C++ Programming Basics
+5,4. Why is the main() function special?,C++ Programming Basics
+5,5. A C++ instruction that tells the computer to do something is called a.,C++ Programming Basics
+6,6. Write an example of a normal C++ comment and an example of an old-fashioned /*,C++ Programming Basics
+6,7. An expression,C++ Programming Basics
+6,8. Specify how many bytes are occupied by the following data types in a 32-bit system:,C++ Programming Basics
+6,9. True or false: A variable of type char can hold the value 301.,C++ Programming Basics
+6,10. What kind of program elements are the following?,C++ Programming Basics
+6,11. Write statements that display on the screen.,C++ Programming Basics
+6,"12. True or false: In an assignment statement, the value on the left of the equal sign is always",C++ Programming Basics
+6,13. Write a statement that displays the variable george in a field 10 characters wide,C++ Programming Basics
+6,14. What header file must you #include with your source file to use cout and cin?,C++ Programming Basics
+6,15. Write a statement that gets a numerical value from the keyboard and places it in the vari-.,C++ Programming Basics
+6,16. What header file must you #include with your program to use setw?.,C++ Programming Basics
+6,17. Two exceptions to the rule that the compiler ignores whitespace are.,C++ Programming Basics
+7,18. True or false: It's perfectly all right to use variables of different data types in the same,C++ Programming Basics
+7,19. The expression 11%3 evaluates to,C++ Programming Basics
+7,20. An arithmetic assignment operator combines the effect of what two operators?,C++ Programming Basics
+7,21. Write a statement that uses an arithmetic assignment operator to increase the value of.,C++ Programming Basics
+7,22. The increment operator increases the value of a variable by how much?.,C++ Programming Basics
+7,"23. Assuming var1 starts with the value 20, what will the following code fragment print out?",C++ Programming Basics
+7,"24. In the examples we've seen so far, header files have been used for what purpose?",C++ Programming Basics
+7,25. The actual code for library functions is contained in a,C++ Programming Basics
+7,4. Write a program that displays your favorite poem. Use an appropriate escape sequence,C++ Programming Basics
+8,"5. A library function, islower(), takes a single character (a letter) as an argument and",C++ Programming Basics
+8,"6. On a certain day the British pound was equivalent to $1.487 U.S., the French franc was",C++ Programming Basics
+8,7. You can convert temperature from degrees Celsius to degrees Fahrenheit by multiplying,C++ Programming Basics
+8,"8. When a value is smaller than a field specified with setw(), the unused locations are, by",C++ Programming Basics
+8,"9. If you have two fractions, a/b and c/d, their sum can be obtained from the formula",C++ Programming Basics
+8,3 + 8,C++ Programming Basics
+9,"10. In the heyday of the British empire, Great Britain used a monetary system based on",C++ Programming Basics
+9,"11. By default, output is right-justified in its field. You can left-justify text output using the",C++ Programming Basics
+9,109 Pine Lane,C++ Programming Basics
+9,42 E. 99th Ave.,C++ Programming Basics
+9,"12. Write the inverse of Exercise 10, so that the user enters an amount in Great Britain's new",C++ Programming Basics
+11,1. A relational operator,Loops and Decisions
+11,2. Write an expression that uses a relational operator to return true if the variable george is.,Loops and Decisions
+11,3. Is -1 true or false?,Loops and Decisions
+11,4. Name and describe the usual purpose of three expressions in a for statement..,Loops and Decisions
+11,"5. In a for loop with a multistatement loop body, semicolons should appear following",Loops and Decisions
+11,6. True or false: The increment expression in a for loop can decrement the loop variable,Loops and Decisions
+11,7. Write a for loop that displays the numbers from 100 to 110,Loops and Decisions
+11,8. A block of code is delimited by.,Loops and Decisions
+11,9. A variable defined within a block is visible,Loops and Decisions
+11,10. Write a whi1e loop that displays the numbers from 100 to 110..,Loops and Decisions
+11,11. True or false: Relational operators have a higher precedence than arithmetic operators..,Loops and Decisions
+12,12. How many times is the loop body executed in a do loop?.,Loops and Decisions
+12,13. Write a do loop that displays the numbers from 100 to 110..,Loops and Decisions
+12,14. Write an if statement that prints Yes if a variable age is greater than 21..,Loops and Decisions
+12,15. The library function exit() causes an exit from,Loops and Decisions
+12,"16. Write an if...e1se statement that displays Yes if a variable age is greater than 21, and",Loops and Decisions
+12,17. The getche() library function,Loops and Decisions
+12,18. What is the character obtained from cin when the user presses the Enter key?.,Loops and Decisions
+12,19. An else always matches the,Loops and Decisions
+12,20. The else...if construction is obtained from a nested if...else by,Loops and Decisions
+12,"21. Write a switch statement that prints Yes if a variable ch is 'y', prints No if ch is 'n',",Loops and Decisions
+12,22. Write a statement that uses a conditional operator to set ticket to 1 if speed is greater,Loops and Decisions
+12,23. The && and || operators,Loops and Decisions
+12,24. Write an expression involving a logical operator that is true if 1imit is 55 and speed is.,Loops and Decisions
+12,"25. Arrange in order of precedence (highest first) the following kinds of operators: logical,",Loops and Decisions
+13,26. The break statement causes an exit.,Loops and Decisions
+13,27. Executing the continue operator from within a loop causes control to go to,Loops and Decisions
+13,28. The goto statement causes control to go to.,Loops and Decisions
+13,2 to convert Celsius to Fahrenheit: 1,Loops and Decisions
+14,5. Use for loops to construct a program that displays a pyramid of Xs on the screen. The,Loops and Decisions
+14,6. Modify the FAcroR program in this chapter so that it repeatedly asks for a number and.,Loops and Decisions
+14,7. Write a program that calculates how much money you'll end up with if you invest an,Loops and Decisions
+15,8. Write a program that repeatedly asks the user to enter two money amounts expressed in.,Loops and Decisions
+15,"9. Suppose you give a dinner party for six guests, but your table seats only four. In how.",Loops and Decisions
+15,"10. Write another version of the program from Exercise 7 so that, instead of finding the final",Loops and Decisions
+15,"11. Create a three-function calculator for old-style English currency, where money amounts.",Loops and Decisions
+16,"12. Create a four-function calculator for fractions. (See Exercise 9 in Chapter 2, and.",Loops and Decisions
+17,1. A structure brings together a group of,Structures
+17,2. True or false: A structure and a class use similar syntax..,Structures
+17,3. The closing brace of a structure is followed by a.,Structures
+17,"4. Write a structure specification that includes three variables--all of type int-called hrs,",Structures
+17,5. True or false: A structure definition creates space in memory for a variable..,Structures
+18,"6. When accessing a structure member, the identifier to the left of the dot operator is the",Structures
+18,7. Write a statement that sets the hrs member of the time2 structure variable equal to 11,Structures
+18,"8. If you have three variables defined to be of type struct time, and this structure contains",Structures
+18,9. Write a definition that initializes the members of time1--which is a variable of type,Structures
+18,"10. True or false: You can assign one structure variable to another, provided they are of the",Structures
+18,11. Write a statement that sets the variable temp equal to the paw member of the dogs mem-,Structures
+18,12. An enumeration brings together a group of,Structures
+18,"13. Write a statement that declares an enumeration called players with the values B1, B2",Structures
+18,"14. Assuming the enum type players as declared in Question 13, define two variables joe",Structures
+18,"15. Assuming the statements of Questions 13 and 14, state whether each of the following",Structures
+18,16. The first three enumerators of an enum type are normally represented by the values,Structures
+18,17. Write a statement that declares an enumeration called speeds with the enumerators,Structures
+19,18. State the reason that,Structures
+19,4. Create a structure called employee that contains two members: an employee number,Structures
+20,"5. Create a structure of type date that contains three members: the month, the day of the",Structures
+20,6. We said earlier that C++ I/O statements don't automatically understand the data types of,Structures
+20,"7. Add a variable of type enum etype (see Exercise 6), and another variable of type struct",Structures
+20,"8. Start with the fraction-adding program of Exercise 9 in Chapter 2, ""C++ Programming",Structures
+20,"9. Create a structure called time. Its three members, all type int, should be called hours,",Structures
+21,10. Create a structure called sterling that stores money amounts in the old-style British,Structures
+21,"11. Use the time structure from Exercise 9, and write a program that obtains two time val-.",Structures
+21,12. Revise the four-function fraction calculator program of Exercise 12 in Chapter 3 so that,Structures
+22,1. A function's single most important role is to,Functions
+22,2. A function itself is called the function d.,Functions
+22,3. Write a function called foo() that displays the word foo,Functions
+22,4. A one-statement description of a function is referred to as a function d.,Functions
+22,5. The statements that carry out the work of the function constitute the function.,Functions
+22,6. A program statement that invokes a function is a function,Functions
+22,7. The first line of a function definition is referred to as the,Functions
+22,8. A function argument is,Functions
+22,"9. True or false: When arguments are passed by value, the function works with the original",Functions
+22,10. What is the purpose of using argument names in a function declaration?,Functions
+22,11. Which of the following can legitimately be passed to a function?,Functions
+22,12. What is the significance of empty parentheses in a function declaration?,Functions
+22,13. How many values can be returned from a function?,Functions
+22,"14. True or false: When a function returns a value, the entire function call can appear on the.",Functions
+22,15. Where is a function's return type specified?.,Functions
+23,16. A function that doesn't return anything has return type.,Functions
+23,17. Here's a function:.,Functions
+23,18. When an argument is passed by reference,Functions
+23,19. What is a principal reason for passing arguments by reference?.,Functions
+23,20. Overloaded functions,Functions
+23,21. Write declarations for two overloaded functions named bar(). They both return type,Functions
+23,"22. In general, an inline function executes",Functions
+23,23. Write the declarator for an inline function named foobar() that takes one argument of,Functions
+23,24. A default argument has a value that,Functions
+23,25. Write a declaration for a function called blyth() that takes two arguments and returns,Functions
+23,26. Scope and storage class are concerned with the,Functions
+24,27. What functions can access a global variable that appears in the same file with them?,Functions
+24,29. A static local variable is used to,Functions
+24,30. In what unusual place can you use a function call when a function returns a value by ref-.,Functions
+24,"5. Write a function called hms_to_secs() that takes three int values-for hours, minutes,",Functions
+24,"6. Start with the program from Exercise 11 in Chapter 4, ""Structures, which adds two",Functions
+25,"7. Start with the power() function of Exercise 2, which works only with type double.",Functions
+25,8. Write a function called swap() that interchanges two int values passed to it by the call,Functions
+25,"9. Repeat Exercise 8, but instead of two int variables, have the swap() function inter-",Functions
+25,"10. Write a function that, when you call it, displays a message telling how many times it has",Functions
+25,"11. Write a program, based on the sterling structure of Exercise 10 in Chapter 4, that",Functions
+25,"12. Revise the four-function fraction calculator from Exercise 12, Chapter 4, so that it uses",Objects and Classes
+26,17. Write a revised version of the getcrow() member function from Question 10 that is,Objects and Classes
+26,18. The only technical difference between structures and classes in C++ is that,Objects and Classes
+26,"19. If three objects of a class are defined, how many copies of that class's data items are",Objects and Classes
+26,20. Sending a message to an object is the same as,Objects and Classes
+26,21. Classes are useful because they,Objects and Classes
+26,22. True or false: There is a simple but precise methodology for dividing a real-world,Objects and Classes
+26,"23. For the object for which it was called, a const member function.",Objects and Classes
+26,"24. True or false: If you declare a const object, it can only be used with const member",Objects and Classes
+26,25. Write a declaration (not a definition) for a const void function called aFunc() that takes,Objects and Classes
+27,"4. Create an employee class, basing it on Exercise 4 of Chapter 4. The member data should",Objects and Classes
+27,5. Start with the date structure in Exercise 5 in Chapter 4 and transform it into a date,Objects and Classes
+27,6. Extend the employee class of Exercise 4 to include a date class (see Exercise 5) and an,Objects and Classes
+27,"7. In ocean navigation, locations are measured in degrees and minutes of latitude and longi-",Objects and Classes
+28,"8. Create a class that includes a data member that holds a ""serial number""' for each object",Objects and Classes
+28,9. Transform the fraction structure from Exercise 8 in Chapter 4 into a fraction class.,Objects and Classes
+28,10. Create a class called ship that incorporates a ship's number and location. Use the,Objects and Classes
+29,11. Modify the four-function fraction calculator of Exercise 12 in Chapter 5 to use a,Objects and Classes
+29,"12. Note that one advantage of the OOP approach is that an entire class can be used, without",Objects and Classes
+30,1. An array element is accessed using,Arrays and Strings
+30,2. All the elements in an array must be the,Arrays and Strings
+30,3. Write a statement that defines a one-dimensional array called doubleArray of type,Arrays and Strings
+30,4. The elements of a 10-element array are numbered from,Arrays and Strings
+30,5. Write a statement that takes element j of array doubleArray and writes it to cout with.,Arrays and Strings
+30,6. Element doubleArray[7] is which element of the array?,Arrays and Strings
+31,7. Write a statement that defines an array coins of type int and initializes it to the values.,Arrays and Strings
+31,"8. When a multidimensional array is accessed, each array index is",Arrays and Strings
+31,9. Write an expression that accesses element 4 in subarray 2 in a two-dimensional array,Arrays and Strings
+31,10. True or false: In C++ there can be an array of four dimensions.,Arrays and Strings
+31,"11. For a two-dimensional array of type float, called f1arr, write a statement that declares.",Arrays and Strings
+31,"12. An array name, used in the source file, represents the.",Arrays and Strings
+31,"13. When an array name is passed to a function, the function",Arrays and Strings
+31,14. Tell what this statement defines:,Arrays and Strings
+31,15. Write an expression that accesses a structure member called salary in a structure variable,Arrays and Strings
+31,"16. In a stack, the data item placed on the stack first is",Arrays and Strings
+31,17. Write a statement that defines an array called manybirds that holds 50 objects of type bird.,Arrays and Strings
+31,18. True or false: The compiler will complain if you try to access array element 14 in a 10-,Arrays and Strings
+31,19. Write a statement that executes the member function cheep() in an object of class bird,Arrays and Strings
+32,20. A string in C++ is an,Arrays and Strings
+32,21. Write a statement that defines a string variable called city that can hold a string of up,Arrays and Strings
+32,"22. Write a statement that defines a string constant, called dextrose, that has the value",Arrays and Strings
+32,23. True or false: The extraction operator (>>) stops reading a string when it encounters a,Arrays and Strings
+32,24. You can read input that consists of multiple lines of text using.,Arrays and Strings
+32,25. Write a statement that uses a string library function to copy the string name to the,Arrays and Strings
+32,26. Write the declaration for a class called dog that contains two data members: a string,Arrays and Strings
+32,27. True or false: You should prefer C-strings to the Standard C++ string class in new,Arrays and Strings
+32,28. Objects of the string class,Arrays and Strings
+32,"29. Write a statement that finds where the string ""cat"" occurs in the string s1..",Arrays and Strings
+32,"30. Write a statement that inserts the string ""cat"" into string s1 at position 12.",Arrays and Strings
+33,"4. Start with a program that allows the user to input a number of integers, and then stores",Arrays and Strings
+33,5. Start with the fraction class from Exercises 11 and 12 in Chapter 6. Write a main(),Arrays and Strings
+33,"6. In the game of contract bridge, each of four players is dealt 13 cards, thus exhausting the",Arrays and Strings
+33,7. One of the weaknesses of C++ for writing business programs is that it does not contain a.,Arrays and Strings
+34,8. Another weakness of C++ is that it does not automatically check array indexes to see,Arrays and Strings
+34,9. A queue is a data storage device much like a stack. The difference is that in a stack the,Arrays and Strings
+35,10. A matrix is a two-dimensional array. Create a class matrix that provides the same safety,Arrays and Strings
+35,11. Refer back to the discussion of money strings in Exercise 6. Write a function called,Arrays and Strings
+36,12. Create a class called bMoney. It should store money amounts as long doubles. Use the,Arrays and Strings
+37,1. Operator overloading is,Operator Overloading
+37,"2. Assuming that class x does not use any overloaded operators, write a statement that subtracts",Operator Overloading
+38,"3. Assuming that class X includes a routine to overload the - operator, write a statement that",Operator Overloading
+38,4. True or false: The >= operator can be overloaded.,Operator Overloading
+38,5. Write a complete definition for an overloaded operator for the Counter class of the,Operator Overloading
+38,6. How many arguments are required in the definition of an overloaded unary operator?,Operator Overloading
+38,"7. Assume a class c with objects obj1, obj2, and obj3. For the statement obj3 =",Operator Overloading
+38,8. Write a complete definition for an overloaded ++ operator for the Distance class from.,Operator Overloading
+38,"9. Repeat Question 8, but allow statements like the following:",Operator Overloading
+38,"10. When used in prefix form, what does the overloaded ++ operator do differently from",Operator Overloading
+38,11. Here are two declarators that describe ways to add two string objects:,Operator Overloading
+39,12. True or false: An overloaded operator always requires one less argument than its number,Operator Overloading
+39,"13. When you overload an arithmetic assignment operator, the result",Operator Overloading
+39,14. Write the complete definition of an overloaded ++ operator that works with the String,Operator Overloading
+39,"15. To convert from a user-defined class to a basic type, you would most likely use",Operator Overloading
+39,16. True or false: The statement objA=objB; will cause a compiler error if the objects are of,Operator Overloading
+39,"17. To convert from a basic type to a user-defined class, you would most likely use",Operator Overloading
+39,18. True or false: If you've defined a constructor to handle definitions like aclass obj =,Operator Overloading
+39,"19. If objA is in class A, and objB is in class B, and you want to say objA = objB;, and you",Operator Overloading
+39,20. True or false: The compiler won't object if you overload the * operator to perform divi-,Operator Overloading
+39,"21. In a UML class diagram, an association arises whenever",Operator Overloading
+40,"22. In the UML, member data items are called",Operator Overloading
+40,23. True or false: rectangles that symbolize classes have rounded corners..,Operator Overloading
+40,24. Navigability from class A to class B means that,Operator Overloading
+40,5. Augment the time class referred to in Exercise 3 to include overloaded increment (++),Operator Overloading
+41,6. Add to the time class of Exercise 5 the ability to subtract two time values using the,Operator Overloading
+41,7. Modify the fraction class in the four-function fraction calculator from Exercise 11 in,Operator Overloading
+41,"8. Modify the bMoney class from Exercise 12 in Chapter 7, ""Arrays and Strings,"" to include",Operator Overloading
+42,9. Augment the safearay class in the ARroveR3 program in this chapter so that the user,Operator Overloading
+42,10. For math buffs only: Create a class Po1ar that represents the points on the plain as polar,Operator Overloading
+42,"11. Remember the ster1ing structure? We saw it in Exercise 10 in Chapter 2, ""C++",Operator Overloading
+43,12. Write a program that incorporates both the bMoney class from Exercise 8 and the sterling.,Operator Overloading
+44,1. Inheritance is a way to,Inheritance
+44,"2. A ""child""' class is said to be.",Inheritance
+44,3. Advantages of inheritance include.,Inheritance
+44,4. Write the first line of the specifier for a class Bosworth that is publicly derived from a,Inheritance
+44,5. True or false: Adding a derived class to a base class requires fundamental changes to the,Inheritance
+44,"6. To be accessed from a member function of the derived class, data or functions in the base",Inheritance
+44,"7. If a base class contains a member function basefunc(), and a derived class does not contain",Inheritance
+44,8. Assume that the classes mentioned in Question 4 and the class Alphonso contain a member.,Inheritance
+45,"9. True or false: If no constructors are specified for a derived class, objects of the derived.",Inheritance
+45,"10. If a base class and a derived class each include a member function with the same name,",Inheritance
+45,11. Write a declarator for a no-argument constructor of the derived class Bosworth of,Inheritance
+45,12. The scope-resolution operator usually,Inheritance
+45,13. True or false: It is sometimes useful to specify a class from which no objects will ever be,Inheritance
+45,14. Assume that there is a class Derv that is derived from a base class Base. Write the,Inheritance
+45,15. Assume a class Derv that is privately derived from class Base. An object of class Derv,Inheritance
+45,"16. True or false: A class D can be derived from a class c, which is derived from a class B,",Inheritance
+45,17. A class hierarchy,Inheritance
+45,18. Write the first line of a specifier for a class Tire that is derived from class whee1 and,Inheritance
+46,19. Assume a class Derv derived from a base class Base. Both classes contain a member,Inheritance
+46,20. True or false: It is illegal to make objects of one class members of another class.,Inheritance
+46,"21. In the UML, inheritance is called",Inheritance
+46,22. Aggregation is,Inheritance
+46,23. True or false: the arrow representing generalization points to the more specific class..,Inheritance
+46,24. Composition is a,Inheritance
+47,4. Assume that the publisher in Exercises 1 and 3 decides to add a third way to distribute,Inheritance
+47,5. Derive a class called employee2 from the employee class in the EmPLoy program in this,Inheritance
+47,6. Start with the ARroveR3 program in Chapter 8. Keep the safearay class the same as in.,Inheritance
+47,7. Start with the counTen2 program in this chapter. It can increment or decrement a,Inheritance
+47,"8. Operators in some computer languages, such as Visual Basic, allow you to select parts of",Inheritance
+48,"9. Start with the publication, book, and tape classes of Exercise 1. Suppose you want to",Inheritance
+48,10. There is only one kind of manager in the EmPmuLr program in this chapter. Any serious,Inheritance
+48,"11. Various situations require that pairs of numbers be treated as a unit. For example, each",Inheritance
+49,"12. Amazing as it may seem, the old British pounds-shillings-pence money notation",Inheritance
+50,1. Write a statement that displays the address of the variable testvar.,Pointers
+50,2. The contents of two pointers that point to adjacent variables of type float differ by,Pointers
+50,3. A pointer is,Pointers
+50,4. Write expressions for the following:.,Pointers
+50,5. An address is a,Pointers
+50,6. Write a definition for a variable of type pointer-to-float.,Pointers
+50,7. Pointers are useful for referring to a memory address that has no,Pointers
+50,"8. If a pointer testptr points to a variable testvar, write a statement that represents the",Pointers
+51,9. An asterisk placed after a data type means,Pointers
+51,10. The expression *test can be said to.,Pointers
+51,11. Is the following code correct?.,Pointers
+51,12. A pointer to void can hold pointers to,Pointers
+51,13. What is the difference between intarr[3] and *(intarr+3)?,Pointers
+51,"14. Write some code that uses pointer notation to display every value in the array intarr,",Pointers
+51,"15. If intarr is an array of integers, why is the expression intarr++ not legal?",Pointers
+51,"16. Of the three ways to pass arguments to functions, only passing by.",Pointers
+51,17. The type of variable a pointer points to must be part of the pointer's definition so that,Pointers
+51,"18. Using pointer notation, write a prototype (declaration) for a function called func() that",Pointers
+51,"19. Using pointer notation, write some code that will transfer 80 characters from the string",Pointers
+51,20. The first element in a string is.,Pointers
+51,"21. Using pointer notation, write the prototype for a function called revstr() that returns a",Pointers
+52,"22. Write a definition for an array numptrs of pointers to the strings One, Two, and Three.",Pointers
+52,23. The new operator,Pointers
+52,24. Using new may result in less.,Pointers
+52,25. The delete operator returns,Pointers
+52,"26. Given a pointer p that points to an object of type upperclass, write an expression that",Pointers
+52,"27. Given an object with index number 7 in array objarr, write an expression that executes",Pointers
+52,28. In a linked list,Pointers
+52,29. Write a definition for an array arr of 8 pointers that point to variables of type float.,Pointers
+52,"30. If you wanted to sort many large objects or structures, it would be most efficient to",Pointers
+52,31. Express the multiplicities of an association that has fewer than 10 objects at one end and,Pointers
+52,32. The states in a state diagram correspond to.,Pointers
+53,33. True or false: a transition between states exists for the duration of the program..,Pointers
+53,34. A guard in a state diagram is,Pointers
+53,"5. Suppose you have a main() with three local arrays, all the same size and type (say",Pointers
+54,"6. Make your own version of the library function strcmp(s1, s2), which compares two",Pointers
+54,7. Modify the person class in the pERsoRr program in this chapter so that it includes not,Pointers
+54,8. Revise the additem() member function from the LINkLisT program so that it adds the,Pointers
+54,"9. Let's say that you need to store 100 integers so that they're easily accessible. However,",Pointers
+55,"10. As presented, Exercise 9 is rather inelegant because each of the 10 int arrays is declared",Pointers
+55,11 allocate NUMARRAYS arrays,Pointers
+55,11. Create a class that allows you to treat the 10 separate arrays in Exercise 10 as a single,Pointers
+55,"12. Pointers are complicated, so let's see whether we can make their operation more under-",Pointers
+58,1. Virtual functions allow you to,Virtual Functions
+58,2. True or false: A pointer to a base class can point to objects of a derived class.,Virtual Functions
+58,"3. If there is a pointer p to objects of a base class, and it contains the address of an object of",Virtual Functions
+58,4. Write a declarator for a virtual function called dang() that returns type void and takes,Virtual Functions
+58,5. Deciding---after a program starts to execute--what function will be executed by a partic-,Virtual Functions
+58,"6. If there is a pointer, p, to objects of a base class, and it contains the address of an object",Virtual Functions
+59,7. Write the declaration for a pure virtual function called aragorn that returns no value and,Virtual Functions
+59,8. A pure virtual function is a virtual function that,Virtual Functions
+59,9. Write the definition of an array called parr of 10 pointers to objects of class dong..,Virtual Functions
+59,10. An abstract class is useful when,Virtual Functions
+59,11. True or false: A friend function can access a class's private data without being a mem-,Virtual Functions
+59,12. A friend function can be used to,Virtual Functions
+59,13. Write the declaration for a friend function called harry() that returns type void and,Virtual Functions
+59,14. The keyword friend appears in,Virtual Functions
+59,"15. Write a declaration that, in the class in which it appears, will make every member of the",Virtual Functions
+59,16. A static function.,Virtual Functions
+60,17. Explain what the default assignment operator = does when applied to objects.,Virtual Functions
+60,18. Write a declaration for an overloaded assignment operator in class zeta,Virtual Functions
+60,19. An assignment operator might be overloaded to,Virtual Functions
+60,20. True or false: The user must always define the operation of the copy constructor.,Virtual Functions
+60,21. The operation of the assignment operator and that of the copy constructor are,Virtual Functions
+60,22. Write the declaration of a copy constructor for a class called Bertha.,Virtual Functions
+60,23. True or false: A copy constructor could be defined to copy only part of an object's data.,Virtual Functions
+60,24. The lifetime of a variable that is.,Virtual Functions
+60,25. True or false: There is no problem with returning the value of a variable defined as local,Virtual Functions
+60,26. Explain the difference in operation between these two statements.,Virtual Functions
+60,27. A copy constructor is invoked when,Virtual Functions
+60,28. What does the this pointer point to?,Virtual Functions
+60,"29. If, within a class, da is a member variable, will the statement this. da=37; assign",Virtual Functions
+60,37 to da?,Virtual Functions
+61,30. Write a statement that a member function can use to return the entire object of which it,Virtual Functions
+61,31. An object rectangle in an object diagram represents,Virtual Functions
+61,32. The lines between objects in a UML object diagram are called.,Virtual Functions
+61,33. True or false: object A may relate to object B at one time but not at another.,Virtual Functions
+61,34. Object diagrams show,Virtual Functions
+63,01 4 9 16 25 36 49 64 81,Virtual Functions
+63,"4. Start with the program of Exercise 1 in this chapter, and add a member function of type",Virtual Functions
+63,"5. Start with the program of Exercise 8 in Chapter 8, which overloaded five arithmetic",Virtual Functions
+63,"6. As in the previous exercise, start with the program of Exercise 8 in Chapter 9. This time",Virtual Functions
+64,7. Remember the PARse program from Chapter 10? It would be nice to improve this pro-,Virtual Functions
+65,8. Let's put a little twist into the HorsE example of Chapter 10 by making a class of extra-,Virtual Functions
+65,9. Exercise 4 in Chapter 10 involved adding an overloaded destructor to the 1ink1ist class.,Virtual Functions
+66,"10. Carry out the modification, discussed in Exercise 7, to the PARsE program of Chapter 10",Virtual Functions
+67,1. A C++ stream is,Streams and Files
+67,2. The base class for most stream classes is the,Streams and Files
+67,3. Name three stream classes commonly used for disk I/O.,Streams and Files
+67,4. Write a statement that will create an object called salefile of the ofstream class and,Streams and Files
+67,"5. True or false: Some streams work with input, and some with output..",Streams and Files
+67,6. Write an if statement that checks whether an ifstream object called foobar has,Streams and Files
+67,7. We can output text to an object of class ofstream using the insertion operator <<,Streams and Files
+67,"8. Write a statement that writes a single character to an object called fileOut, which is of",Streams and Files
+67,"9. To write data that contains variables of type float to an object of type ofstream, you",Streams and Files
+67,10. Write a statement that will read the contents of an ifstream object called ifile into an,Streams and Files
+68,11. Mode bits such as app and ate,Streams and Files
+68,12. Define what current position means when applied to files.,Streams and Files
+68,13. True or false: A file pointer always contains the address of the file.,Streams and Files
+68,14. Write a statement that moves the current position 13 bytes backward in a stream object,Streams and Files
+68,15. The statement.,Streams and Files
+68,16. Command-line arguments are,Streams and Files
+68,"17. Used with cin, what does the skipws flag accomplish?",Streams and Files
+68,18. Write a declarator for main() that will enable command-line arguments..,Streams and Files
+68,"19. In console mode programs, the printer can be accessed using the predefined filename.",Streams and Files
+68,20. Write the declarator for the overloaded >> operator that takes output from an object of,Streams and Files
+69,"4. In a loop, prompt the user to enter name data consisting of a first name, middle initial,",Streams and Files
+69,"5. Create a time class that includes integer member values for hours, minutes, and seconds.",Streams and Files
+70,"6. Make a class called name from the data in Exercise 4 (first name, middle initial, last",Streams and Files
+70,7. Another approach to adding file stream I/O to an object is to make the file stream itself,Streams and Files
+70,"8. Starting with the LINkLisr program in Chapter 10, ""Pointers,' create a program that",Streams and Files
+71,"9. Start with Exercise 7 in Chapter 8, ""Operator Overloading,"" and overload the insertion",Streams and Files
+71,10. Add error checking to the extraction (>>) operator of the frac class in Exercise 9. With,Streams and Files
+71,"11. Start with the bMoney class, last seen in Exercise 5 in Chapter 11. Overload the insertion",Streams and Files
+71,12. To the EmPL_1O program in this chapter add the ability to search through all the employee,Streams and Files
+72,1. Breaking a program into several files is desirable because,Multifile Programs
+72,2. An .H file is associated with a .cpp file using the.,Multifile Programs
+72,3. An .OBJ file is attached to a .cPp file using.,Multifile Programs
+72,4. A project file contains,Multifile Programs
+72,"5. A group of related classes, supplied as a separate product, is often called a",Multifile Programs
+72,6. True or false: A header file may need to be accessed by more than one source file in a,Multifile Programs
+72,7. The so-called private files of a class library,Multifile Programs
+72,8. True or false: Class libraries can be more powerful than function libraries.,Multifile Programs
+72,9. True or false: the interface is private and the implementation is public.,Multifile Programs
+72,10. The public part of a class library usually contains,Multifile Programs
+72,11. Two or more source files can be combined by,Multifile Programs
+73,12. True or false: a variable defined within a function body can be seen thoughout the file in,Multifile Programs
+73,"13. A global variable is defined in file A. To access the variable in file B, you must",Multifile Programs
+73,14. The region in a program where a variable can be accessed by variables in other parts of,Multifile Programs
+73,15. The files that are actually combined by the linker are called,Multifile Programs
+73,"16. A function is defined in file A. To call it from file B, the function must first be",Multifile Programs
+73,17. True or false: a function declaration does not require the keyword extern.,Multifile Programs
+73,"18. To define class objects in different files, in each file you must",Multifile Programs
+73,19. True or false: a variable defined in a header file can be accessed from two source files if,Multifile Programs
+73,20. The #if !defined() ...#endif construction can be used to prevent multiple definitions,Multifile Programs
+73,21. You use namespaces to,Multifile Programs
+74,"22. To define a namespace you use a format similar to a class definition, but substitute the",Multifile Programs
+74,23. Using typedef allows you to.,Multifile Programs
+74,1. Create member functions to perform subtraction and division for the verylong class in,Multifile Programs
+74,2. Rewrite the ELEv program so that it handles only one elevator. This will simplify things a,Multifile Programs
+74,3. Modify the ELEv program to be more efficient in the way it handles requests. As an,Multifile Programs
+74,4. Create a class library that models something you're interested in. Create a main() or,Multifile Programs
+75,6. True or false: There can be more than one template argument,Templates and Exceptions
+75,7. Creating an actual function from a template is called,Templates and Exceptions
+75,8. Actual code for a template function is generated when.,Templates and Exceptions
+75,9. The key concept in the template concept is replacing a,Templates and Exceptions
+75,10. Templates are often used for classes that,Templates and Exceptions
+75,11. An exception is typically caused by,Templates and Exceptions
+75,12. The C++ keywords used with exceptions are,Templates and Exceptions
+75,"13. Write a statement that throws an exception using the class BoundsError, which has an.",Templates and Exceptions
+75,14. True or false: Statements that might cause an exception must be part of a catch block.,Templates and Exceptions
+75,15. Exceptions are thrown,Templates and Exceptions
+75,16. Write the specification for an exception class that stores an error number and an error,Templates and Exceptions
+75,17. True or false: A statement that throws an exception does not need to be located in a try.,Templates and Exceptions
+75,18. The following are errors for which an exception would typically be thrown:.,Templates and Exceptions
+76,19. Additional information sent when an exception is thrown may be placed in,Templates and Exceptions
+76,20. True or false: A program can continue to operate after an exception has occurred.,Templates and Exceptions
+76,"21. If we're talking about dependencies, the template class is the",Templates and Exceptions
+76,22. A template class is shown in the UML as,Templates and Exceptions
+76,23. True or false: A dependency is a kind of association.,Templates and Exceptions
+76,24. A stereotype gives,Templates and Exceptions
+77,4. Create a function called swaps () that interchanges the values of the two arguments sent,Templates and Exceptions
+77,5. Create a function called amax() that returns the value of the largest element in an array.,Templates and Exceptions
+77,6. Start with the safearay class from the ARroveR3 program in Chapter 8. Make this class,Templates and Exceptions
+77,7. Start with the frac class and the four-function fraction calculator of Exercise 7 in,Templates and Exceptions
+77,8. Add an exception class to the ARroveR3 program in Chapter 8 so that an out-of-bounds,Templates and Exceptions
+77,9. Modify the exception class in Exercise 8 (adapted from ARroveR3) so that the error mes-,Templates and Exceptions
+77,10. There are various philosophies about when to use exceptions. Refer to the ENGLeRR pro-.,Templates and Exceptions
+78,"11. Start with the sTRpLus program in Chapter 8. Add an exception class, and throw an",Templates and Exceptions
+78,12. Sometimes the easiest way to use exceptions is to create a new class of which an excep.,Templates and Exceptions
+79,1. An STL container can be used to,The Standard Template Library
+79,2. The STL sequence containers are v,The Standard Template Library
+79,3. Two important STL associative containers are s,The Standard Template Library
+79,4. An STL algorithm is,The Standard Template Library
+79,5. True or false: One purpose of an iterator in the STL is to connect algorithms and,The Standard Template Library
+79,6. The find() algorithm,The Standard Template Library
+79,7. True or false: Algorithms can be used only on STL containers,The Standard Template Library
+79,8. A range is often supplied to an algorithm by two ij,The Standard Template Library
+79,9. What entity is often used to customize the behavior of an algorithm?,The Standard Template Library
+80,10. A vector is an appropriate container if you.,The Standard Template Library
+80,11. True or false: The back() member function removes the element at the back of the con-.,The Standard Template Library
+80,"12. If you define a vector v with the default constructor, and define another vector w with a",The Standard Template Library
+80,13. The unique() algorithm removes all.,The Standard Template Library
+80,14. In a deque,The Standard Template Library
+80,15. In iterator,The Standard Template Library
+80,16. True or false: An iterator can always move forward or backward through a container.,The Standard Template Library
+80,17. You must use at least a,The Standard Template Library
+80,"18. If iter is an iterator to a container, write an expression that will have the value of the",The Standard Template Library
+80,19. The copy() algorithm returns an iterator to,The Standard Template Library
+80,"20. To use a reverse_iterator, you should",The Standard Template Library
+81,21. True or false: The back_inserter iterator always causes the new elements to be inserted,The Standard Template Library
+81,"22. Stream iterators allow you to treat the display and keyboard devices, and files, as if they.",The Standard Template Library
+81,23. What does the second argument to an ostream_iterator specify?,The Standard Template Library
+81,24. In an associative container,The Standard Template Library
+81,"25. When defining a set, you must specify how",The Standard Template Library
+81,"26. True or false: In a set, the insert () member function inserts a key in sorted order.",The Standard Template Library
+81,27. A map stores,The Standard Template Library
+81,28. True or false: A map can have two or more elements with the same key value..,The Standard Template Library
+81,"29. If you store pointers to objects, instead of objects, in a container",The Standard Template Library
+81,"30. If you want an associative container such as set to order itself automatically, you can",The Standard Template Library
+82,5. Fill an array with even numbers and a set with odd numbers. Use the merge() algorithm,The Standard Template Library
+82,"6. In Exercise 3, two ordinary (non-reverse) iterators were used to reverse the contents of a",The Standard Template Library
+82,7. We showed the four-argument version of the accumulate() algorithm in the PLusAIR,The Standard Template Library
+82,"8. You can use the copy() algorithm to copy sequences within a container. However, you",The Standard Template Library
+82,"9. We listed the function objects corresponding to the C++ operators in Table 15.10, and, in",The Standard Template Library
+82,10. You can use the copy_backward() algorithm to overcome the problem described in,The Standard Template Library
+83,"11. Write a program that copies a source file of integers to a destination file, using stream.",The Standard Template Library
+83,12. A frequency table lists words and the number of times each word appears in a text file.,The Standard Template Library
+84,1. True or false: the use case approach is concerned primarily with which methods a class,Object-Oriented Software Development
+84,2. Use cases are used to (among other things),Object-Oriented Software Development
+84,3. A use case is basically a.,Object-Oriented Software Development
+84,"4. True or false: After a use case diagram is created, new use cases can be added after cod-",Object-Oriented Software Development
+84,5. A use case description is sometimes written in two.,Object-Oriented Software Development
+84,6. An actor might be.,Object-Oriented Software Development
+85,7. Classes may be related by (among others) g,Object-Oriented Software Development
+85,8. The waterfall process,Object-Oriented Software Development
+85,"9. True or false: If the UML is used, the Unified Process must also be used",Object-Oriented Software Development
+85,10. Classes in a program may correspond to.,Object-Oriented Software Development
+85,"11. True or false: Vague, general entities (such as ""the system"") in a use case descriptions are",Object-Oriented Software Development
+85,12. True or false: Entities with a single attribute and no methods are good candidates for,Object-Oriented Software Development
+85,"13. In the Unified Process, which of the following may happen from time to time?",Object-Oriented Software Development
+85,14. Actors are.,Object-Oriented Software Development
+85,"15. For the LANDLORD program, STL container classes",Object-Oriented Software Development
+85,16. Class method definitions,Object-Oriented Software Development
+86,17. True or false: Attribution is one of the major class relationships..,Object-Oriented Software Development
+86,"18. Assume there is an association between class A and class B. Also, objA is an object of",Object-Oriented Software Development
+86,19. The LANDLORD program makes use of,Object-Oriented Software Development
+86,"20. True or false: In a class diagram, an association is shown as a relationship between",Object-Oriented Software Development
+86,21. In a sequence diagram,Object-Oriented Software Development
+86,22. A sequence diagram shows messages from one,Object-Oriented Software Development
+86,23. True or false: A sequence diagram often describes a single use case.,Object-Oriented Software Development
+86,"24. In a sequence diagram, when a new class instance is created.",Object-Oriented Software Development
+86,"1. Reread the explanation of the HoRse program from Chapter 10, ""Pointers,' but do not",Object-Oriented Software Development
+87,"2. Reread the explanation of the ELEv program from Chapter 13, ""Multifile Programs,"" but",Object-Oriented Software Development
+87,3. Create a use case diagram and a class diagram for a business situation you're familiar,Object-Oriented Software Development
+87,4. Create a use case diagram and a class diagram for a program you've always wanted to,Object-Oriented Software Development
