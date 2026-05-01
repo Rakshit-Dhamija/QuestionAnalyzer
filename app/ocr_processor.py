@@ -74,50 +74,17 @@ class OCRProcessor:
         }
         return hashlib.sha256(json.dumps(payload, sort_keys=True).encode("utf-8")).hexdigest()
 
+    def _get_next_scan_folder(self, base_dir: str = "ocr_scans") -> str:
+        """Get the next numbered scan folder (scan_001, scan_002, etc.)"""
+        os.makedirs(base_dir, exist_ok=True)
+        existing = [d for d in os.listdir(base_dir) if d.startswith("scan_") and d[5:].isdigit()]
+        next_num = len(existing) + 1
+        return os.path.join(base_dir, f"scan_{next_num:03d}")
+
     def _cache_path(self, cache_key: str) -> str:
         cache_dir = os.path.join("data", "cache", "ocr")
         os.makedirs(cache_dir, exist_ok=True)
         return os.path.join(cache_dir, f"{cache_key}.json")
-
-    def _get_next_scan_number(self) -> int:
-        """Get the next scan number for the ocr_scans folder."""
-        scans_dir = os.path.join("ocr_scans")
-        if not os.path.exists(scans_dir):
-            return 1
-        existing_scans = [
-            int(d.replace("scan_", ""))
-            for d in os.listdir(scans_dir)
-            if d.startswith("scan_") and os.path.isdir(os.path.join(scans_dir, d))
-        ]
-        return max(existing_scans) + 1 if existing_scans else 1
-
-    def _save_scan(self, pdf_path: str, raw_text: str, page_start: int, page_end: int, pages_processed: int) -> str:
-        """Save OCR scan results to ocr_scans/scan_NNN/ folder."""
-        scans_dir = os.path.join("ocr_scans")
-        scan_num = self._get_next_scan_number()
-        scan_folder = os.path.join(scans_dir, f"scan_{scan_num:03d}")
-        os.makedirs(scan_folder, exist_ok=True)
-
-        # Save raw extracted text
-        text_path = os.path.join(scan_folder, "raw_text.txt")
-        with open(text_path, "w", encoding="utf-8") as f:
-            f.write(raw_text)
-
-        # Save metadata
-        metadata = {
-            "scan_number": scan_num,
-            "pdf_source": os.path.basename(pdf_path),
-            "page_start": page_start,
-            "page_end": page_end,
-            "pages_processed": pages_processed,
-            "language": self.lang,
-        }
-        metadata_path = os.path.join(scan_folder, "metadata.json")
-        with open(metadata_path, "w", encoding="utf-8") as f:
-            json.dump(metadata, f, indent=2)
-
-        print(f"[OCR] Scan saved to {scan_folder}")
-        return scan_folder
 
     def _extract_from_pdf_in_worker(
         self, pdf_path: str, page_start: int = 0, page_end: int = None,
@@ -133,15 +100,14 @@ class OCRProcessor:
                 cached = json.load(f)
             if cached.get("ok"):
                 print(f"[OCR] Using cached OCR result from {cache_path}")
-                # Also save cached result to ocr_scans
-                extracted_text = cached.get("text", "")
-                pages_processed = cached.get("pages_processed", 0)
-                self._save_scan(pdf_path, extracted_text, page_start, page_end, pages_processed)
-                return extracted_text
+                return cached.get("text", "")
 
         output_file = tempfile.NamedTemporaryFile(delete=False, suffix=".json")
         output_path = output_file.name
         output_file.close()
+
+        # Create numbered scan folder
+        scan_folder = self._get_next_scan_folder()
 
         env = os.environ.copy()
         env["CUDA_VISIBLE_DEVICES"] = ""
@@ -163,6 +129,8 @@ class OCRProcessor:
             self.lang,
             "--out",
             output_path,
+            "--scan-folder",
+            os.path.abspath(scan_folder),
         ]
         if page_end is not None:
             command.extend(["--end", str(page_end)])
@@ -199,15 +167,10 @@ class OCRProcessor:
 
             print(
                 f"[OCR] Extracted text with {payload.get('backend', 'unknown')} "
-                f"from {payload.get('pages_processed', 0)} page(s)."
+                f"from {payload.get('pages_processed', 0)} page(s). "
+                f"Scans saved to {scan_folder}"
             )
-            
-            # Save to ocr_scans folder
-            extracted_text = payload.get("text", "")
-            pages_processed = payload.get("pages_processed", 0)
-            self._save_scan(pdf_path, extracted_text, page_start, page_end, pages_processed)
-            
-            return extracted_text
+            return payload.get("text", "")
         except subprocess.TimeoutExpired as e:
             raise RuntimeError(f"OCR timed out after {timeout_seconds} seconds. Try a smaller page range.") from e
         except Exception as e:
@@ -260,6 +223,16 @@ class OCRProcessor:
         current_question = []
         current_heading = None
 
+        def save_current():
+            if current_exercise and current_question:
+                text = ' '.join(current_question).strip()
+                if text:
+                    questions.append({
+                        'exercise_id': current_exercise,
+                        'question_text': text,
+                        'type': 'exercise'
+                    })
+
         for line in lines:
             raw_line = line.strip()
             if not raw_line or raw_line.startswith("---"):
@@ -267,12 +240,7 @@ class OCRProcessor:
 
             match = exercise_pattern.match(raw_line)
             if match:
-                if current_exercise and current_question:
-                    questions.append({
-                        'exercise_id': current_exercise,
-                        'question_text': ' '.join(current_question).strip(),
-                        'type': 'exercise'
-                    })
+                save_current()
 
                 number = match.group('number')
                 text = match.group('text') or match.group('text2') or ''
@@ -283,30 +251,98 @@ class OCRProcessor:
                 continue
 
             # Sometimes headings are broken across lines, like "Exercise" then "2.1" or "Question" then "1"
-            if current_exercise is None and current_heading is None:
-                heading_match = question_heading_pattern.match(raw_line)
-                if heading_match:
-                    current_heading = heading_match.group(0).capitalize()
-                    current_question = []
-                    continue
-                number_only = optional_bracket_pattern.match(raw_line)
-                if number_only and current_heading is not None:
-                    current_exercise = f"{current_heading} {number_only.group('number')}"
-                    text = number_only.group('text') or ''
-                    current_question = [text] if text else []
-                    current_heading = None
-                    continue
+            heading_match = question_heading_pattern.match(raw_line)
+            if heading_match:
+                save_current()
+                current_heading = heading_match.group(0).capitalize()
+                current_exercise = None
+                current_question = []
+                continue
+
+            number_only = optional_bracket_pattern.match(raw_line)
+            if number_only and current_heading is not None:
+                save_current()
+                current_exercise = f"{current_heading} {number_only.group('number')}"
+                text = number_only.group('text') or ''
+                current_question = [text] if text else []
+                continue
 
             if current_exercise:
                 current_question.append(raw_line)
 
-        if current_exercise and current_question:
-            questions.append({
-                'exercise_id': current_exercise,
-                'question_text': ' '.join(current_question).strip(),
-                'type': 'exercise'
-            })
+        save_current()
 
+        if not questions:
+            questions = self.extract_numbered_study_questions(extracted_text)
+
+        return questions
+
+    def extract_numbered_study_questions(self, extracted_text: str) -> List[Dict[str, str]]:
+        """
+        Extract textbook questions from sections such as Review Questions,
+        Problems, Exercises, or Self-Test where items are simply numbered.
+        This helps books like the 8051 PDF that do not use "Exercise 2.1".
+        """
+        questions = []
+        section_pattern = re.compile(
+            r"^(?:review\s+questions|problems|exercises?|self[-\s]?test|questions)$",
+            re.IGNORECASE,
+        )
+        stop_pattern = re.compile(
+            r"^(?:answers?\s+to|summary|recommended|references|bibliography|objectives|"
+            r"chapter\s+\d+|\d+\s*:\s+[A-Z]|[A-Z][A-Z\s]{8,})",
+            re.IGNORECASE,
+        )
+        item_pattern = re.compile(r"^(\d{1,3})\s*[.)]\s+(.+)$")
+        marks_pattern = re.compile(r"^\(?\s*\d+\s*(?:[+*]\s*\d+\s*)*(?:=\s*\d+)?\s*\)?$")
+
+        in_section = False
+        current_id = None
+        current_question = []
+        section_name = "Question"
+
+        def save_current():
+            if current_id and current_question:
+                text = " ".join(current_question).strip()
+                if text:
+                    questions.append({
+                        "exercise_id": current_id,
+                        "question_text": text,
+                        "type": "exercise",
+                    })
+
+        for raw_line in extracted_text.splitlines():
+            line = re.sub(r"\s+", " ", raw_line.strip())
+            if not line or line.startswith("---"):
+                continue
+
+            if section_pattern.match(line):
+                save_current()
+                in_section = True
+                current_id = None
+                current_question = []
+                section_name = line.title()
+                continue
+
+            if in_section and stop_pattern.match(line):
+                save_current()
+                in_section = False
+                current_id = None
+                current_question = []
+                continue
+
+            if not in_section or marks_pattern.match(line):
+                continue
+
+            item_match = item_pattern.match(line)
+            if item_match:
+                save_current()
+                current_id = f"{section_name} {item_match.group(1)}"
+                current_question = [item_match.group(2).strip()]
+            elif current_id:
+                current_question.append(line)
+
+        save_current()
         return questions
     
     def extract_question_papers(self, extracted_text: str) -> List[Dict[str, str]]:
@@ -323,17 +359,17 @@ class OCRProcessor:
         questions = []
         # Handles "Q.1(a)", "Q1(b)", "Q.3", "Question 1", "1.", "2)" and similar OCR variants.
         q_prefixed_pattern = re.compile(
-            r"^(?:Q(?:uestion)?)(?:\s*\.|\s*)\s*(\d+)\s*"
+            r"^(?:Q(?:uestion)?)(?:\s*\.|\s*)\s*(\d{1,3})\s*"
             r"(?:[.)-]?\s*(?:\(([a-zA-Z])\)|([a-zA-Z])\)))?"
             r"[\s.)-]*(.*)$",
             re.IGNORECASE,
         )
         question_word_pattern = re.compile(
-            r"^Question\s*(\d+)(?:\s*[:.)-]+\s*(.*))?$",
+            r"^Question\s*(\d{1,3})(?:\s*[:.,)-]+\s*(.*))?$",
             re.IGNORECASE,
         )
         numbered_pattern = re.compile(
-            r"^(\d+)\s*[.)-]\s*"
+            r"^(\d{1,3})\s*[.)-]\s*"
             r"(?:\(([a-zA-Z])\)|([a-zA-Z])\))?\s*(.*)$",
             re.IGNORECASE,
         )
@@ -377,10 +413,11 @@ class OCRProcessor:
                 # Save previous question if exists
                 save_current_question()
                 
-                part = (match.group(2) or match.group(3) or "").lower() if len(match.groups()) >= 3 else ""
+                groups = match.groups()
+                part = (groups[1] or groups[2] or "").lower() if len(groups) >= 3 else ""
                 q_num = match.group(1)
                 current_q_num = f"Q{q_num}{f'({part})' if part else ''}"
-                first_line = match.group(4).strip() if match.group(4) is not None else ''
+                first_line = groups[3].strip() if len(groups) >= 4 and groups[3] is not None else ''
                 current_question = [first_line] if first_line else []
             elif current_q_num:
                 current_question.append(line)

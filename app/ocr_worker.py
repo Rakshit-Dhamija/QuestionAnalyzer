@@ -9,6 +9,7 @@ inside the Streamlit process that imports PyTorch.
 import argparse
 import json
 import os
+import shutil
 import traceback
 
 
@@ -122,6 +123,20 @@ def _run_ocr(ocr, img):
         raise
 
 
+def _run_tesseract(pil_img):
+    """Optional fallback when Tesseract and pytesseract are installed."""
+    if shutil.which("tesseract") is None:
+        return None
+
+    try:
+        import pytesseract
+    except ImportError:
+        return None
+
+    text = pytesseract.image_to_string(pil_img)
+    return [line.strip() for line in text.splitlines() if line.strip()]
+
+
 def _texts_from_ocr_result(result):
     """Extract recognized text from PaddleOCR 2.x tuple output or 3.x dict output."""
     texts = []
@@ -177,7 +192,7 @@ def _texts_from_ocr_result(result):
     return texts
 
 
-def extract_from_pdf(pdf_path, page_start=0, page_end=None, lang="en"):
+def extract_from_pdf(pdf_path, page_start=0, page_end=None, lang="en", scan_folder=None):
     import fitz
     import numpy as np
     from PIL import Image
@@ -185,6 +200,13 @@ def extract_from_pdf(pdf_path, page_start=0, page_end=None, lang="en"):
     extracted_text = ""
     backend = "embedded"
     pages_processed = 0
+    saved_images = []
+
+    # Setup scan folder if provided
+    if scan_folder:
+        os.makedirs(scan_folder, exist_ok=True)
+        images_dir = os.path.join(scan_folder, "images")
+        os.makedirs(images_dir, exist_ok=True)
 
     with fitz.open(pdf_path) as pdf:
         total_pages = len(pdf)
@@ -198,6 +220,7 @@ def extract_from_pdf(pdf_path, page_start=0, page_end=None, lang="en"):
                 "backend": "none",
                 "pages_processed": 0,
                 "total_pages": total_pages,
+                "saved_images": saved_images,
             }
 
         for pg_num in range(start_page, end_page):
@@ -205,40 +228,88 @@ def extract_from_pdf(pdf_path, page_start=0, page_end=None, lang="en"):
             if page_text:
                 extracted_text += f"\n--- Page {pg_num + 1} ---\n{page_text}\n"
                 pages_processed += 1
+                
+                # Save page image if scan folder is provided
+                if scan_folder:
+                    mat = fitz.Matrix(1.5, 1.5)
+                    pm = pdf[pg_num].get_pixmap(matrix=mat, alpha=False)
+                    img_path = os.path.join(images_dir, f"page_{pg_num + 1:04d}.png")
+                    pm.save(img_path)
+                    saved_images.append(img_path)
+                    print(f"[OCR] Saved page {pg_num + 1} image to {img_path}")
 
         if extracted_text.strip():
             print("[OCR] Used embedded PDF text; PaddleOCR was not needed.")
+            if scan_folder:
+                text_file = os.path.join(scan_folder, "raw_text.txt")
+                with open(text_file, "w", encoding="utf-8") as f:
+                    f.write(extracted_text)
+                print(f"[OCR] Saved raw text to {text_file}")
             return {
                 "text": extracted_text,
                 "backend": backend,
                 "pages_processed": pages_processed,
                 "total_pages": total_pages,
+                "saved_images": saved_images,
             }
 
         print("[OCR] Initializing PaddleOCR on CPU... (worker first use may take a moment)")
-        ocr = _create_ocr(lang)
-        backend = "paddleocr"
-        print("[OCR] PaddleOCR initialized successfully in worker.")
+        ocr = None
+        try:
+            ocr = _create_ocr(lang)
+            backend = "paddleocr"
+            print("[OCR] PaddleOCR initialized successfully in worker.")
+        except Exception:
+            if shutil.which("tesseract") is None:
+                raise
+            backend = "tesseract"
+            print("[OCR] PaddleOCR unavailable; falling back to Tesseract.")
 
         for pg_num in range(start_page, end_page):
             page = pdf[pg_num]
 
             mat = fitz.Matrix(1.5, 1.5)
             pm = page.get_pixmap(matrix=mat, alpha=False)
-            img = np.array(Image.frombytes("RGB", [pm.width, pm.height], pm.samples))
+            pil_img = Image.frombytes("RGB", [pm.width, pm.height], pm.samples)
 
-            result = _run_ocr(ocr, img)
+            if ocr is None:
+                page_texts = _run_tesseract(pil_img) or []
+            else:
+                img = np.array(pil_img)
+                try:
+                    page_texts = _texts_from_ocr_result(_run_ocr(ocr, img))
+                except Exception:
+                    fallback_texts = _run_tesseract(pil_img)
+                    if fallback_texts is None:
+                        raise
+                    backend = "tesseract"
+                    page_texts = fallback_texts
 
             extracted_text += f"\n--- Page {pg_num + 1} ---\n"
-            for text in _texts_from_ocr_result(result):
+            for text in page_texts:
                 extracted_text += text + "\n"
             pages_processed += 1
+            
+            # Save page image if scan folder is provided
+            if scan_folder:
+                img_path = os.path.join(images_dir, f"page_{pg_num + 1:04d}.png")
+                pil_img.save(img_path)
+                saved_images.append(img_path)
+                print(f"[OCR] Saved page {pg_num + 1} image to {img_path}")
+
+    # Save raw text to file if scan folder is provided
+    if scan_folder and extracted_text.strip():
+        text_file = os.path.join(scan_folder, "raw_text.txt")
+        with open(text_file, "w", encoding="utf-8") as f:
+            f.write(extracted_text)
+        print(f"[OCR] Saved raw text to {text_file}")
 
     return {
         "text": extracted_text,
         "backend": backend,
         "pages_processed": pages_processed,
         "total_pages": total_pages,
+        "saved_images": saved_images,
     }
 
 
@@ -249,11 +320,12 @@ def main():
     parser.add_argument("--end", type=int)
     parser.add_argument("--lang", default="en")
     parser.add_argument("--out", required=True)
+    parser.add_argument("--scan-folder", default=None, help="Optional: folder to save page images and text")
     args = parser.parse_args()
 
     _force_cpu()
     try:
-        result = extract_from_pdf(args.pdf, args.start, args.end, args.lang)
+        result = extract_from_pdf(args.pdf, args.start, args.end, args.lang, args.scan_folder)
         payload = {"ok": True, **result}
     except Exception as e:
         payload = {

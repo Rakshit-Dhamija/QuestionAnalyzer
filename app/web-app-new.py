@@ -42,6 +42,7 @@ defaults = {
     "chapter_map": {},     # {1: "Chapter Name", 2: "Chapter Name", ...}
     # Step 3 output
     "analysis_results": None,
+    "evaluation_results": None,
 }
 for k, v in defaults.items():
     if k not in st.session_state:
@@ -68,6 +69,7 @@ page = st.sidebar.radio(
         "📄 Step 1: OCR Extraction",
         "🧠 Step 2: Train Model",
         "📊 Step 3: Analyze & Results",
+        "🎯 Step 4: Model Accuracy",
     ],
 )
 
@@ -77,9 +79,11 @@ st.sidebar.markdown("### 🔄 Pipeline Status")
 s1 = "✅" if st.session_state.exercise_df is not None or st.session_state.paper_df is not None else "⏳"
 s2 = "✅" if st.session_state.model_trained else "⏳"
 s3 = "✅" if st.session_state.analysis_results is not None else "⏳"
+s4 = "✅" if st.session_state.evaluation_results is not None else "⏳"
 st.sidebar.markdown(f"{s1} Step 1: OCR Extraction")
 st.sidebar.markdown(f"{s2} Step 2: Model Trained")
 st.sidebar.markdown(f"{s3} Step 3: Results Ready")
+st.sidebar.markdown(f"{s4} Step 4: Accuracy Checked")
 
 
 # ─────────────────────────────────────────────
@@ -90,6 +94,7 @@ def parse_chapter_index(index_text: str) -> dict:
     Extract {chapter_number: chapter_name} from OCR'd index/ToC text.
     Handles patterns like:
       - "Chapter 1: Getting Started"
+      - "Unit 1 - Getting Started"
       - "1. Getting Started"
       - "1  Getting Started"
     """
@@ -103,7 +108,11 @@ def parse_chapter_index(index_text: str) -> dict:
         if not value:
             return False
         lower = value.lower()
-        if lower in {"contents", "preface"}:
+        if lower in {
+            "contents", "table of contents", "preface", 
+            "index", "glossary", "appendix", "acknowledgments",
+            "bibliography", "references"
+        }:
             return False
         if lower.startswith(("part ", "section ", "chapter summary", "defined terms")):
             return False
@@ -121,12 +130,14 @@ def parse_chapter_index(index_text: str) -> dict:
         if not line or line.startswith('---'):
             continue
 
-        same_line = re.match(r'^chapter\s+(\d+)\s+(.+)$', line, re.IGNORECASE)
-        split_line = re.match(r'^chapter\s+(\d+)\s*$', line, re.IGNORECASE)
+        kw_same = re.match(r'^(?:chapter|unit|module|part|topic)\s+(\d+)\s*[:.\-]?\s+(.+)$', line, re.IGNORECASE)
+        kw_split = re.match(r'^(?:chapter|unit|module|part|topic)\s+(\d+)\s*[:.\-]?\s*$', line, re.IGNORECASE)
+        num_same = re.match(r'^(\d+)\s*[:.\-]+\s+([A-Z].+)$', line)
+        compact = re.match(r'^(\d+)\s+([A-Z][A-Za-z][^\d.]{3,})$', line)
 
-        if same_line:
-            num = int(same_line.group(1))
-            title = clean_title(same_line.group(2))
+        if kw_same:
+            num = int(kw_same.group(1))
+            title = clean_title(kw_same.group(2))
             if is_chapter_title(title):
                 chapter_map[num] = title
                 pending_chapter = None
@@ -134,8 +145,17 @@ def parse_chapter_index(index_text: str) -> dict:
                 pending_chapter = num
             continue
 
-        if split_line:
-            pending_chapter = int(split_line.group(1))
+        if kw_split:
+            pending_chapter = int(kw_split.group(1))
+            continue
+
+        if num_same:
+            num = int(num_same.group(1))
+            if 1 <= num <= 99 and num not in chapter_map:
+                title = clean_title(num_same.group(2))
+                if is_chapter_title(title):
+                    chapter_map[num] = title
+                    pending_chapter = None
             continue
 
         if pending_chapter is not None:
@@ -145,7 +165,6 @@ def parse_chapter_index(index_text: str) -> dict:
                 pending_chapter = None
             continue
 
-        compact = re.match(r'^(\d+)\s+([A-Z][A-Za-z][^\d.]{3,})$', line)
         if compact:
             num = int(compact.group(1))
             if 1 <= num <= 99 and num not in chapter_map:
@@ -183,6 +202,49 @@ def show_extraction_error(label: str, error: Exception):
     if message:
         with st.expander("Details"):
             st.code(message)
+
+
+def evaluate_predictions(df: pd.DataFrame, truth_col: str, pred_col: str) -> dict:
+    eval_df = df[[truth_col, pred_col]].copy()
+    eval_df[truth_col] = eval_df[truth_col].astype(str).str.strip()
+    eval_df[pred_col] = eval_df[pred_col].astype(str).str.strip()
+    eval_df = eval_df[(eval_df[truth_col] != "") & (eval_df[pred_col] != "")]
+    if eval_df.empty:
+        raise ValueError("No usable rows found for evaluation.")
+
+    eval_df["Correct"] = eval_df[truth_col] == eval_df[pred_col]
+    accuracy = float(eval_df["Correct"].mean())
+
+    per_class = (
+        eval_df.groupby(truth_col)["Correct"]
+        .agg(["count", "sum", "mean"])
+        .reset_index()
+        .rename(columns={
+            truth_col: "Chapter",
+            "count": "Samples",
+            "sum": "Correct",
+            "mean": "Accuracy",
+        })
+    )
+    per_class["Accuracy"] = (per_class["Accuracy"] * 100).round(2)
+    per_class["Correct"] = per_class["Correct"].astype(int)
+
+    confusion = pd.crosstab(
+        eval_df[truth_col],
+        eval_df[pred_col],
+        rownames=["Actual"],
+        colnames=["Predicted"],
+        dropna=False,
+    )
+
+    return {
+        "accuracy": accuracy,
+        "total": len(eval_df),
+        "correct": int(eval_df["Correct"].sum()),
+        "details": eval_df,
+        "per_class": per_class,
+        "confusion": confusion,
+    }
 
 
 # ─────────────────────────────────────────────
@@ -737,8 +799,134 @@ elif page == "📊 Step 3: Analyze & Results":
             key="dl_weightage",
         )
 
+
+# ─────────────────────────────────────────────
+# STEP 4 — MODEL ACCURACY
+# ─────────────────────────────────────────────
+elif page == "🎯 Step 4: Model Accuracy":
+    st.title("🎯 Step 4: Model Accuracy")
+    st.markdown(
+        "Evaluate the trained model against labeled questions. Use a CSV with `Question Text` "
+        "and a true chapter column, or evaluate the current Step 3 results if they already include labels."
+    )
+
+    if not st.session_state.model_trained:
+        st.warning("Train the model in Step 2 before running an accuracy check.")
+
+    st.markdown("---")
+
+    source = st.radio(
+        "Evaluation source",
+        ["Upload labeled CSV", "Use Step 3 results"],
+        key="eval_source",
+    )
+
+    eval_df = None
+    if source == "Upload labeled CSV":
+        uploaded_eval = st.file_uploader(
+            "Upload labeled CSV",
+            type=["csv"],
+            key="eval_csv",
+            help="Required: Question Text plus a true chapter/label column.",
+        )
+        if uploaded_eval is not None:
+            eval_df = pd.read_csv(uploaded_eval)
+            st.dataframe(eval_df.head(), use_container_width=True)
+    else:
+        if st.session_state.analysis_results is not None:
+            eval_df = st.session_state.analysis_results.copy()
+            st.dataframe(eval_df.head(), use_container_width=True)
+        else:
+            st.info("Run Step 3 first, or upload a labeled CSV.")
+
+    # if eval_df is not None:
+    #     columns = list(eval_df.columns)
+    #     if "Question Text" not in columns:
+    #         st.error("Evaluation data must include a `Question Text` column.")
+    #     else:
+    #         label_candidates = [
+    #             col for col in columns
+    #             if col.lower() in {
+    #                 "chapter_name",
+    #                 "chapter",
+    #                 "actual chapter",
+    #                 "true chapter",
+    #                 "label",
+    #                 "actual label",
+    #             }
+    #         ]
+    #         prediction_candidates = [
+    #             col for col in columns
+    #             if col.lower() in {"predicted chapter", "predicted_chapter", "prediction"}
+    #         ]
+
+    #         truth_col = st.selectbox(
+    #             "True chapter column",
+    #             columns,
+    #             index=columns.index(label_candidates[0]) if label_candidates else 0,
+    #             key="eval_truth_col",
+    #         )
+
+    #         if prediction_candidates:
+    #             pred_col = prediction_candidates[0]
+    #             st.caption(f"Using existing prediction column: `{pred_col}`")
+    #             needs_prediction = False
+    #         else:
+    #             pred_col = "Predicted Chapter"
+    #             needs_prediction = True
+
+    #         batch_size = st.slider("Evaluation batch size", 4, 32, 8, key="eval_batch_size")
+
+    #         if st.button("Calculate Accuracy", key="eval_btn", type="primary"):
+    #             if not st.session_state.model_trained:
+    #                 st.error("Train the model before evaluating.")
+    #             else:
+    #                 try:
+    #                     status = st.empty()
+    #                     work_df = eval_df.copy()
+
+    #                     if needs_prediction:
+    #                         status.info("Classifying labeled questions...")
+    #                         predictions = st.session_state.pipeline.classify_questions(
+    #                             work_df["Question Text"].tolist(),
+    #                             batch_size=batch_size,
+    #                         )
+    #                         work_df[pred_col] = [p["predicted_chapter"] for p in predictions]
+    #                         work_df["Confidence"] = [p["confidence"] for p in predictions]
+
+    #                     results = evaluate_predictions(work_df, truth_col, pred_col)
+    #                     st.session_state.evaluation_results = results
+    #                     status.success("Accuracy calculation complete.")
+    #                 except Exception as e:
+    #                     st.error(f"Accuracy calculation failed: {e}")
+
+    # if st.session_state.evaluation_results is not None:
+    #     results = st.session_state.evaluation_results
+    #     st.markdown("---")
+
+    #     m1, m2, m3 = st.columns(3)
+    #     m1.metric("Accuracy", f"{results['accuracy'] * 100:.2f}%")
+    #     m2.metric("Correct", f"{results['correct']} / {results['total']}")
+    #     m3.metric("Classes", len(results["per_class"]))
+
+    #     st.subheader("Per-Chapter Accuracy")
+    #     st.dataframe(results["per_class"], use_container_width=True)
+
+    #     st.subheader("Confusion Matrix")
+    #     st.dataframe(results["confusion"], use_container_width=True)
+
+    #     st.subheader("Row-Level Results")
+    #     st.dataframe(results["details"], use_container_width=True)
+
+    #     csv_eval = results["details"].to_csv(index=False).encode("utf-8")
+    #     st.download_button(
+    #         "⬇️ Download Accuracy Details CSV",
+    #         data=csv_eval,
+    #         file_name="model_accuracy_details.csv",
+    #         mime="text/csv",
+    #         key="dl_eval_details",
+    #     )
+
 # ─────────────────────────────────────────────
 # Footer
-# ─────────────────────────────────────────────
-st.markdown("---")
-st.caption("📚 Question Analyzer · OCR → Train → Analyze")
+# ─────
