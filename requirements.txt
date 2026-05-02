@@ -11,10 +11,10 @@ pillow
 fitz  # PyMuPDF
 # playsound
 streamlit
-threading
+# threading
 # time
 # PIL
-re
+# re
 # csv
 tensorflow==2.20.0 
 transformers==4.48.0 
