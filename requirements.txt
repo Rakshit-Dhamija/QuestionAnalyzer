@@ -4,6 +4,7 @@ pandas
 # torch 
 # paddlepaddle-gpu
 # cudf
+torch
 paddlepaddle==3.3.0 -i https://www.paddlepaddle.org.cn/packages/stable/cpu/
 paddleocr==3.3.2
 pymupdf 
