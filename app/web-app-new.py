@@ -317,6 +317,62 @@ if page == "🏠 Home":
     )
 
 
+    # ─────────────────────────────────────────────
+    # Download All Outputs
+    # ─────────────────────────────────────────────
+    st.markdown("---")
+    st.subheader("⬇️ Download All Outputs")
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        if st.session_state.exercise_df is not None:
+            csv_ex = st.session_state.exercise_df.to_csv(index=False).encode("utf-8")
+            st.download_button(
+                "Exercise Questions CSV",
+                data=csv_ex,
+                file_name="exercise_questions.csv",
+                mime="text/csv",
+                key="home_dl_ex",
+            )
+        else:
+            st.caption("Exercise CSV not available")
+    with col2:
+        if st.session_state.paper_df is not None:
+            csv_paper = st.session_state.paper_df.to_csv(index=False).encode("utf-8")
+            st.download_button(
+                "Question Paper CSV",
+                data=csv_paper,
+                file_name="question_paper.csv",
+                mime="text/csv",
+                key="home_dl_paper",
+            )
+        else:
+            st.caption("Question Paper CSV not available")
+    with col3:
+        if st.session_state.analysis_results is not None:
+            csv_out = st.session_state.analysis_results.to_csv(index=False).encode("utf-8")
+            st.download_button(
+                "Analysis Results CSV",
+                data=csv_out,
+                file_name="chapter_analysis_results.csv",
+                mime="text/csv",
+                key="home_dl_results",
+            )
+        else:
+            st.caption("Analysis Results not available")
+    with col4:
+        if st.session_state.evaluation_results is not None:
+            csv_eval = st.session_state.evaluation_results["details"].to_csv(index=False).encode("utf-8")
+            st.download_button(
+                "Accuracy Details CSV",
+                data=csv_eval,
+                file_name="model_accuracy_details.csv",
+                mime="text/csv",
+                key="home_dl_eval",
+            )
+        else:
+            st.caption("Accuracy Details not available")
+
+
 # ─────────────────────────────────────────────
 # STEP 1 — OCR EXTRACTION
 # ─────────────────────────────────────────────
@@ -362,6 +418,32 @@ elif page == "📄 Step 1: OCR Extraction":
         book_start = st.number_input("Start page", min_value=0, value=0, key="book_start")
         book_end_raw = st.number_input("End page (0 = all)", min_value=0, value=0, key="book_end")
         book_end = None if book_end_raw == 0 else int(book_end_raw)
+
+    if docs_pdfs:
+        st.markdown("**Quick Downloads:**")
+        col_dl1, col_dl2 = st.columns(2)
+        with col_dl1:
+            if "Primer.pdf" in docs_pdfs:
+                with open(os.path.join("docs", "Primer.pdf"), "rb") as f:
+                    primer_data = f.read()
+                st.download_button(
+                    "⬇️ Download Primer.pdf",
+                    data=primer_data,
+                    file_name="Primer.pdf",
+                    mime="application/pdf",
+                    key="dl_primer",
+                )
+        with col_dl2:
+            if "AUX 2016.pdf" in docs_pdfs:
+                with open(os.path.join("docs", "AUX 2016.pdf"), "rb") as f:
+                    aux_data = f.read()
+                st.download_button(
+                    "⬇️ Download AUX 2016.pdf",
+                    data=aux_data,
+                    file_name="AUX 2016.pdf",
+                    mime="application/pdf",
+                    key="dl_aux",
+                )
 
     # ── Section B: Book Index / ToC ──────────
     st.subheader("🗂️ B. Book Index / Table of Contents (for Chapter Names)")
@@ -685,8 +767,14 @@ elif page == "📊 Step 3: Analyze & Results":
         "by chapter, then see the **chapter-wise weightage**."
     )
 
+    # Load pre-trained model if not already loaded
     if not st.session_state.model_trained:
-        st.warning("⚠️ The BERT model has not been trained yet. Please complete **Step 2** first.")
+        try:
+            st.session_state.pipeline.load_bert_model("data/models/bert_model")
+            st.session_state.model_trained = True
+            st.success("Pre-trained model loaded successfully.")
+        except Exception as e:
+            st.error(f"Failed to load pre-trained model: {e}. Please ensure the model files exist in data/models/bert_model.")
 
     st.markdown("---")
 
@@ -724,7 +812,7 @@ elif page == "📊 Step 3: Analyze & Results":
         batch_size = st.slider("Prediction batch size", 4, 32, 8, key="prediction_batch_size")
         if st.button("🔬 Classify Questions", key="classify_btn", type="primary"):
             if not st.session_state.model_trained:
-                st.error("❌ Train the model in Step 2 before classifying.")
+                st.error("❌ Model is not available. Please ensure the model files exist.")
             else:
                 try:
                     status = st.empty()
@@ -811,7 +899,12 @@ elif page == "🎯 Step 4: Model Accuracy":
     )
 
     if not st.session_state.model_trained:
-        st.warning("Train the model in Step 2 before running an accuracy check.")
+        try:
+            st.session_state.pipeline.load_bert_model("data/models/bert_model")
+            st.session_state.model_trained = True
+            st.success("Model loaded successfully.")
+        except Exception as e:
+            st.warning(f"Could not load model: {e}")
 
     st.markdown("---")
 
@@ -839,93 +932,93 @@ elif page == "🎯 Step 4: Model Accuracy":
         else:
             st.info("Run Step 3 first, or upload a labeled CSV.")
 
-    # if eval_df is not None:
-    #     columns = list(eval_df.columns)
-    #     if "Question Text" not in columns:
-    #         st.error("Evaluation data must include a `Question Text` column.")
-    #     else:
-    #         label_candidates = [
-    #             col for col in columns
-    #             if col.lower() in {
-    #                 "chapter_name",
-    #                 "chapter",
-    #                 "actual chapter",
-    #                 "true chapter",
-    #                 "label",
-    #                 "actual label",
-    #             }
-    #         ]
-    #         prediction_candidates = [
-    #             col for col in columns
-    #             if col.lower() in {"predicted chapter", "predicted_chapter", "prediction"}
-    #         ]
+    if eval_df is not None:
+        columns = list(eval_df.columns)
+        if "Question Text" not in columns:
+            st.error("Evaluation data must include a `Question Text` column.")
+        else:
+            label_candidates = [
+                col for col in columns
+                if col.lower() in {
+                    "chapter_name",
+                    "chapter",
+                    "actual chapter",
+                    "true chapter",
+                    "label",
+                    "actual label",
+                }
+            ]
+            prediction_candidates = [
+                col for col in columns
+                if col.lower() in {"predicted chapter", "predicted_chapter", "prediction"}
+            ]
 
-    #         truth_col = st.selectbox(
-    #             "True chapter column",
-    #             columns,
-    #             index=columns.index(label_candidates[0]) if label_candidates else 0,
-    #             key="eval_truth_col",
-    #         )
+            truth_col = st.selectbox(
+                "True chapter column",
+                columns,
+                index=columns.index(label_candidates[0]) if label_candidates else 0,
+                key="eval_truth_col",
+            )
 
-    #         if prediction_candidates:
-    #             pred_col = prediction_candidates[0]
-    #             st.caption(f"Using existing prediction column: `{pred_col}`")
-    #             needs_prediction = False
-    #         else:
-    #             pred_col = "Predicted Chapter"
-    #             needs_prediction = True
+            if prediction_candidates:
+                pred_col = prediction_candidates[0]
+                st.caption(f"Using existing prediction column: `{pred_col}`")
+                needs_prediction = False
+            else:
+                pred_col = "Predicted Chapter"
+                needs_prediction = True
 
-    #         batch_size = st.slider("Evaluation batch size", 4, 32, 8, key="eval_batch_size")
+            batch_size = st.slider("Evaluation batch size", 4, 32, 8, key="eval_batch_size")
 
-    #         if st.button("Calculate Accuracy", key="eval_btn", type="primary"):
-    #             if not st.session_state.model_trained:
-    #                 st.error("Train the model before evaluating.")
-    #             else:
-    #                 try:
-    #                     status = st.empty()
-    #                     work_df = eval_df.copy()
+            if st.button("Calculate Accuracy", key="eval_btn", type="primary"):
+                if not st.session_state.model_trained:
+                    st.error("Ensure the model is loaded before evaluating.")
+                else:
+                    try:
+                        status = st.empty()
+                        work_df = eval_df.copy()
 
-    #                     if needs_prediction:
-    #                         status.info("Classifying labeled questions...")
-    #                         predictions = st.session_state.pipeline.classify_questions(
-    #                             work_df["Question Text"].tolist(),
-    #                             batch_size=batch_size,
-    #                         )
-    #                         work_df[pred_col] = [p["predicted_chapter"] for p in predictions]
-    #                         work_df["Confidence"] = [p["confidence"] for p in predictions]
+                        if needs_prediction:
+                            status.info("Classifying labeled questions...")
+                            predictions = st.session_state.pipeline.classify_questions(
+                                work_df["Question Text"].tolist(),
+                                batch_size=batch_size,
+                            )
+                            work_df[pred_col] = [p["predicted_chapter"] for p in predictions]
+                            work_df["Confidence"] = [p["confidence"] for p in predictions]
 
-    #                     results = evaluate_predictions(work_df, truth_col, pred_col)
-    #                     st.session_state.evaluation_results = results
-    #                     status.success("Accuracy calculation complete.")
-    #                 except Exception as e:
-    #                     st.error(f"Accuracy calculation failed: {e}")
+                        results = evaluate_predictions(work_df, truth_col, pred_col)
+                        st.session_state.evaluation_results = results
+                        status.success("Accuracy calculation complete.")
+                    except Exception as e:
+                        st.error(f"Accuracy calculation failed: {e}")
 
-    # if st.session_state.evaluation_results is not None:
-    #     results = st.session_state.evaluation_results
-    #     st.markdown("---")
+    if st.session_state.evaluation_results is not None:
+        results = st.session_state.evaluation_results
+        st.markdown("---")
 
-    #     m1, m2, m3 = st.columns(3)
-    #     m1.metric("Accuracy", f"{results['accuracy'] * 100:.2f}%")
-    #     m2.metric("Correct", f"{results['correct']} / {results['total']}")
-    #     m3.metric("Classes", len(results["per_class"]))
+        m1, m2, m3 = st.columns(3)
+        m1.metric("Accuracy", f"{results['accuracy'] * 100:.2f}%")
+        m2.metric("Correct", f"{results['correct']} / {results['total']}")
+        m3.metric("Classes", len(results["per_class"]))
 
-    #     st.subheader("Per-Chapter Accuracy")
-    #     st.dataframe(results["per_class"], use_container_width=True)
+        st.subheader("Per-Chapter Accuracy")
+        st.dataframe(results["per_class"], use_container_width=True)
 
-    #     st.subheader("Confusion Matrix")
-    #     st.dataframe(results["confusion"], use_container_width=True)
+        st.subheader("Confusion Matrix")
+        st.dataframe(results["confusion"], use_container_width=True)
 
-    #     st.subheader("Row-Level Results")
-    #     st.dataframe(results["details"], use_container_width=True)
+        st.subheader("Row-Level Results")
+        st.dataframe(results["details"], use_container_width=True)
 
-    #     csv_eval = results["details"].to_csv(index=False).encode("utf-8")
-    #     st.download_button(
-    #         "⬇️ Download Accuracy Details CSV",
-    #         data=csv_eval,
-    #         file_name="model_accuracy_details.csv",
-    #         mime="text/csv",
-    #         key="dl_eval_details",
-    #     )
+        csv_eval = results["details"].to_csv(index=False).encode("utf-8")
+        st.download_button(
+            "⬇️ Download Accuracy Details CSV",
+            data=csv_eval,
+            file_name="model_accuracy_details.csv",
+            mime="text/csv",
+            key="dl_eval_details",
+        )
 
 # ─────────────────────────────────────────────
 # Footer
