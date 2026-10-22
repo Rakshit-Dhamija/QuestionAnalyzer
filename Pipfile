@@ -16,10 +16,6 @@ pillow = "*"
 fitz = "*"
 playsound = "*"
 streamlit = "*"
-threading = "*"
-time = "*"
-pil = "*"
-re = "*"
 
 [dev-packages]
 
