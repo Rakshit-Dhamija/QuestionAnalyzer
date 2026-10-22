@@ -1,24 +1,12 @@
+
 numpy
 pandas
-# transformers
-# torch 
-# paddlepaddle-gpu
-# cudf
-torch
-paddlepaddle==3.3.0 -i https://www.paddlepaddle.org.cn/packages/stable/cpu/
-paddleocr==3.3.2
-pymupdf 
-pillow
-fitz  # PyMuPDF
-# playsound
 streamlit
-# threading
-# time
-# PIL
-# re
-# csv
-tensorflow==2.20.0 
-transformers==4.48.0 
-protobuf>=5.28.0
-
-# numpy pandas streamlit transformers torch paddlepaddle-gpu cudf paddleocr pymupdf  pillow fitz playsound threading time PIL re csv
+pymupdf
+pillow
+paddleocr==3.3.2
+paddlepaddle==3.3.0
+torch
+tensorflow==2.20.0
+transformers==4.48.0
+protobuf>=5.28.0,<6
