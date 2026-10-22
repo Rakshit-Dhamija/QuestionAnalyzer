@@ -18,7 +18,17 @@ import streamlit as st
 import pandas as pd
 from pathlib import Path
 
+import sys
+from pathlib import Path
+
+# Add the repository root to Python's import path
+ROOT_DIR = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT_DIR))
+
+import pandas as pd
+
 from app.pipeline import QuestionAnalysisPipeline
+
 
 # ─────────────────────────────────────────────
 # Page config
