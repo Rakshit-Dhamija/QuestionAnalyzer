@@ -24,6 +24,55 @@ from torch.utils.data import Dataset
 import pandas as pd
 from typing import List, Dict, Tuple
 import json
+import re
+
+_QUESTION_COL_ALIASES = ["question text", "question_text", "question", "questions", "text", "prompt"]
+_LABEL_COL_ALIASES = ["chapter_name", "chapter name", "chapter", "label", "class", "topic", "category"]
+
+
+def _find_col(columns, aliases):
+    """Find a column by normalized alias; returns canonical alias on success."""
+    normalized = {re.sub(r"[_\s]+", " ", str(c).strip().lower()): c for c in columns}
+    for alias in aliases:
+        key = re.sub(r"[_\s]+", " ", alias)
+        if key in normalized:
+            return normalized[key]
+    return None
+
+
+def normalize_dataframe(df: pd.DataFrame, require_label: bool = True) -> pd.DataFrame:
+    """
+    Normalize any user CSV into the canonical schema:
+    'Question Text' (always) and 'Chapter_name' (when labeled).
+
+    Handles BOM-prefixed headers, differing column names and casing so the
+    pipeline works with many different input CSV files.
+    """
+    df = df.copy()
+    df.columns = [str(c).lstrip("\ufeff").strip() for c in df.columns]
+
+    q_col = _find_col(df.columns, _QUESTION_COL_ALIASES)
+    if q_col is None:
+        # Fall back: first text-like column.
+        text_cols = [c for c in df.columns if df[c].dtype == object]
+        if not text_cols:
+            raise ValueError("CSV must contain a question/text column")
+        q_col = text_cols[0]
+
+    label_col = _find_col(df.columns, _LABEL_COL_ALIASES) if require_label else None
+    if require_label and label_col is None:
+        raise ValueError("CSV must contain a chapter/label column")
+
+    out = pd.DataFrame()
+    out["Question Text"] = df[q_col].astype(str).str.strip()
+    if label_col is not None:
+        out["Chapter_name"] = df[label_col].astype(str).str.strip()
+
+    # Drop empties
+    out = out[out["Question Text"].str.lower().isin(["", "nan", "none"]) == False]
+    if "Chapter_name" in out.columns:
+        out = out[out["Chapter_name"].str.lower().isin(["", "nan", "none"]) == False]
+    return out.reset_index(drop=True)
 
 
 class QuestionDataset(Dataset):
@@ -106,6 +155,7 @@ class BERTQuestionAnalyzer:
             Tuple of (questions, labels_encoded)
         """
         df = pd.read_csv(csv_path)
+        df = normalize_dataframe(df, require_label=True)  # tolerate varied CSV schemas
         questions = df['Question Text'].tolist()
         chapter_labels = df['Chapter_name'].tolist()
         

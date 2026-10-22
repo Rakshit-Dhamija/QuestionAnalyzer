@@ -179,20 +179,67 @@ class OCRProcessor:
             if os.path.exists(output_path):
                 os.remove(output_path)
 
+    def extract_text(self, file_path: str, page_start: int = 0, page_end: int = None) -> str:
+        """
+        Extract raw text from a PDF **or plain-text file (.txt/.md)**.
+
+        Plain-text files are read directly (no OCR needed), which makes the
+        pipeline work with any input file type, not just PDFs.
+        """
+        ext = os.path.splitext(file_path)[1].lower()
+        if ext in {".txt", ".md"}:
+            with open(file_path, "r", encoding="utf-8", errors="replace") as f:
+                lines = f.readlines()
+            start = max(0, int(page_start or 0))
+            end = len(lines) if page_end is None else min(int(page_end), len(lines))
+            return "".join(lines[start:end])
+        return self.extract_from_pdf(file_path, page_start, page_end)
+
     def extract_from_pdf(self, pdf_path: str, page_start: int = 0, page_end: int = None) -> str:
         """
         Extract raw text from PDF pages
-        
+
         Args:
             pdf_path: Path to PDF file
             page_start: Starting page number (0-indexed)
             page_end: Ending page number (None = all pages)
-            
+
         Returns:
             Extracted text content
         """
         self._initialize_ocr()
-        return self._extract_from_pdf_in_worker(pdf_path, page_start, page_end)
+        try:
+            return self._extract_from_pdf_in_worker(pdf_path, page_start, page_end)
+        except RuntimeError as exc:
+            message = str(exc)
+            # OCR is optional: if it fails to start but PyMuPDF is available,
+            # fall back to reading the embedded PDF text directly.
+            if "OCR initialization failed" in message or "PaddleOCR" in message:
+                try:
+                    import fitz  # PyMuPDF
+                except ImportError:
+                    raise RuntimeError(
+                        f"{message}\n"
+                        "Install OCR support with: "
+                        "`pip install -r requirements-ocr.txt "
+                        "-i https://www.paddlepaddle.org.cn/packages/stable/cpu/`"
+                    ) from exc
+                text_parts = []
+                with fitz.open(pdf_path) as pdf:
+                    start = max(0, page_start or 0)
+                    end = min(page_end if page_end is not None else len(pdf), len(pdf))
+                    for pg in range(start, end):
+                        page_text = pdf[pg].get_text("text").strip()
+                        if page_text:
+                            text_parts.append(f"\n--- Page {pg + 1} ---\n{page_text}")
+                if text_parts:
+                    return "\n".join(text_parts)
+                raise RuntimeError(
+                    "This PDF has no embedded text layer and OCR is not installed. "
+                    "Install OCR support with: `pip install -r requirements-ocr.txt "
+                    "-i https://www.paddlepaddle.org.cn/packages/stable/cpu/`"
+                ) from exc
+            raise
     
     def extract_exercise_questions(self, extracted_text: str) -> List[Dict[str, str]]:
         """

@@ -193,6 +193,20 @@ def _texts_from_ocr_result(result):
 
 
 def extract_from_pdf(pdf_path, page_start=0, page_end=None, lang="en", scan_folder=None):
+    # Plain-text input: read directly, no PDF tooling needed.
+    if pdf_path.lower().endswith((".txt", ".md")):
+        with open(pdf_path, "r", encoding="utf-8", errors="replace") as f:
+            lines = f.readlines()
+        start = max(0, page_start or 0)
+        end = len(lines) if page_end is None else min(page_end, len(lines))
+        return {
+            "text": "".join(lines[start:end]),
+            "backend": "text",
+            "pages_processed": end - start,
+            "total_pages": len(lines),
+            "saved_images": [],
+        }
+
     import fitz
     import numpy as np
     from PIL import Image
@@ -208,35 +222,50 @@ def extract_from_pdf(pdf_path, page_start=0, page_end=None, lang="en", scan_fold
         images_dir = os.path.join(scan_folder, "images")
         os.makedirs(images_dir, exist_ok=True)
 
-    with fitz.open(pdf_path) as pdf:
+    try:
+        pdf = fitz.open(pdf_path)
+    except Exception:
+        import traceback
+        return {
+            "text": "",
+            "backend": "none",
+            "pages_processed": 0,
+            "total_pages": 0,
+            "saved_images": saved_images,
+            "error": "Could not open file as PDF: " + traceback.format_exc(limit=1),
+        }
+
+    try:
         total_pages = len(pdf)
         end_page = page_end if page_end is not None else total_pages
         start_page = max(0, page_start)
         end_page = min(end_page, total_pages)
+    finally:
+        pass
 
-        if start_page >= end_page:
-            return {
-                "text": "",
-                "backend": "none",
-                "pages_processed": 0,
-                "total_pages": total_pages,
-                "saved_images": saved_images,
-            }
+    if start_page >= end_page:
+        pdf.close()
+        return {
+            "text": "",
+            "backend": "none",
+            "pages_processed": 0,
+            "total_pages": total_pages,
+            "saved_images": saved_images,
+        }
 
+    try:
         for pg_num in range(start_page, end_page):
             page_text = pdf[pg_num].get_text("text").strip()
             if page_text:
                 extracted_text += f"\n--- Page {pg_num + 1} ---\n{page_text}\n"
                 pages_processed += 1
-                
-                # Save page image if scan folder is provided
+
                 if scan_folder:
                     mat = fitz.Matrix(1.5, 1.5)
                     pm = pdf[pg_num].get_pixmap(matrix=mat, alpha=False)
                     img_path = os.path.join(images_dir, f"page_{pg_num + 1:04d}.png")
                     pm.save(img_path)
                     saved_images.append(img_path)
-                    print(f"[OCR] Saved page {pg_num + 1} image to {img_path}")
 
         if extracted_text.strip():
             print("[OCR] Used embedded PDF text; PaddleOCR was not needed.")
@@ -244,7 +273,6 @@ def extract_from_pdf(pdf_path, page_start=0, page_end=None, lang="en", scan_fold
                 text_file = os.path.join(scan_folder, "raw_text.txt")
                 with open(text_file, "w", encoding="utf-8") as f:
                     f.write(extracted_text)
-                print(f"[OCR] Saved raw text to {text_file}")
             return {
                 "text": extracted_text,
                 "backend": backend,
@@ -253,17 +281,24 @@ def extract_from_pdf(pdf_path, page_start=0, page_end=None, lang="en", scan_fold
                 "saved_images": saved_images,
             }
 
-        print("[OCR] Initializing PaddleOCR on CPU... (worker first use may take a moment)")
+        # No embedded text: try OCR engines, but fail clearly if none installed.
+        print("[OCR] No embedded text; trying OCR engines...")
         ocr = None
         try:
             ocr = _create_ocr(lang)
             backend = "paddleocr"
             print("[OCR] PaddleOCR initialized successfully in worker.")
-        except Exception:
-            if shutil.which("tesseract") is None:
-                raise
-            backend = "tesseract"
-            print("[OCR] PaddleOCR unavailable; falling back to Tesseract.")
+        except Exception as e:
+            if shutil.which("tesseract") is not None:
+                backend = "tesseract"
+                print("[OCR] PaddleOCR unavailable; falling back to Tesseract.")
+            else:
+                raise RuntimeError(
+                    "This PDF has no embedded text layer and no OCR engine is installed. "
+                    "Install OCR with: pip install -r requirements-ocr.txt "
+                    "-i https://www.paddlepaddle.org.cn/packages/stable/cpu/ "
+                    f"(original engine error: {e})"
+                ) from e
 
         for pg_num in range(start_page, end_page):
             page = pdf[pg_num]
@@ -289,20 +324,18 @@ def extract_from_pdf(pdf_path, page_start=0, page_end=None, lang="en", scan_fold
             for text in page_texts:
                 extracted_text += text + "\n"
             pages_processed += 1
-            
-            # Save page image if scan folder is provided
+
             if scan_folder:
                 img_path = os.path.join(images_dir, f"page_{pg_num + 1:04d}.png")
                 pil_img.save(img_path)
                 saved_images.append(img_path)
-                print(f"[OCR] Saved page {pg_num + 1} image to {img_path}")
+    finally:
+        pdf.close()
 
-    # Save raw text to file if scan folder is provided
     if scan_folder and extracted_text.strip():
         text_file = os.path.join(scan_folder, "raw_text.txt")
         with open(text_file, "w", encoding="utf-8") as f:
             f.write(extracted_text)
-        print(f"[OCR] Saved raw text to {text_file}")
 
     return {
         "text": extracted_text,

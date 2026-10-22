@@ -1,0 +1,6 @@
+# Optional: OCR for scanned PDFs (no embedded text layer).
+# Install with:
+#   pip install -r requirements-ocr.txt -i https://www.paddlepaddle.org.cn/packages/stable/cpu/
+# Text-based PDFs work fine without these.
+paddlepaddle==3.3.0
+paddleocr==3.3.2

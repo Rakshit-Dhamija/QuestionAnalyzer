@@ -49,6 +49,7 @@ for k, v in defaults.items():
         st.session_state[k] = v
 
 # Initialize pipeline once
+MODEL_DIR = os.environ.get("QUESTION_ANALYZER_MODEL_DIR", "data/models/bert_model")
 if st.session_state.pipeline is None and st.session_state.pipeline_error is None:
     try:
         st.session_state.pipeline = QuestionAnalysisPipeline()
@@ -175,25 +176,34 @@ def parse_chapter_index(index_text: str) -> dict:
     return chapter_map
 
 
-def chapter_num_from_exercise_id(exercise_id: str) -> int | None:
+def chapter_num_from_exercise_id(exercise_id: str):
     """Extract chapter number from 'Exercise 2.3' → 2"""
     m = re.search(r'(\d+)', exercise_id)
     return int(m.group(1)) if m else None
 
 
 def save_uploaded_pdf(uploaded_file, prefix: str) -> str:
-    """Persist a Streamlit upload to a unique temp file for subprocess OCR."""
-    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf", prefix=f"{prefix}_")
+    """Persist a Streamlit upload to a unique temp file for subprocess OCR.
+
+    Keeps the original extension so text files (.txt) work alongside PDFs.
+    """
+    name = getattr(uploaded_file, "name", "") or ""
+    suffix = os.path.splitext(name)[1].lower()
+    if suffix not in (".pdf", ".txt", ".md"):
+        suffix = ".pdf"
+    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=suffix, prefix=f"{prefix}_")
     tmp.write(uploaded_file.getvalue())
     tmp.close()
     return tmp.name
 
 
 def list_docs_pdfs(folder: str = "docs") -> list:
-    """List available PDF files inside the docs folder."""
+    """List available PDF/text files inside the docs folder."""
     if not os.path.exists(folder):
         return []
-    return sorted([f for f in os.listdir(folder) if f.lower().endswith('.pdf')])
+    return sorted(
+        [f for f in os.listdir(folder) if f.lower().endswith((".pdf", ".txt"))]
+    )
 
 
 def show_extraction_error(label: str, error: Exception):
@@ -399,7 +409,7 @@ elif page == "📄 Step 1: OCR Extraction":
     with col1:
         book_pdf = st.file_uploader(
             "Upload textbook PDF",
-            type=["pdf"],
+            type=["pdf", "txt"],
             key="book_pdf_upload",
             help="The model will extract exercise questions (e.g., 'Exercise 2.1')",
         )
@@ -415,35 +425,9 @@ elif page == "📄 Step 1: OCR Extraction":
             book_doc_choice = "None"
     with col2:
         st.markdown("**Page range for exercises:**")
-        book_start = st.number_input("Start page", min_value=0, value=0, key="book_start")
-        book_end_raw = st.number_input("End page (0 = all)", min_value=0, value=0, key="book_end")
+        book_start = st.number_input("Start page", min_value=0, value=0, step=1, key="book_start")
+        book_end_raw = st.number_input("End page (leave 0 for all pages)", min_value=0, value=0, step=1, key="book_end")
         book_end = None if book_end_raw == 0 else int(book_end_raw)
-
-    if docs_pdfs:
-        st.markdown("**Quick Downloads:**")
-        col_dl1, col_dl2 = st.columns(2)
-        with col_dl1:
-            if "Primer.pdf" in docs_pdfs:
-                with open(os.path.join("docs", "Primer.pdf"), "rb") as f:
-                    primer_data = f.read()
-                st.download_button(
-                    "⬇️ Download Primer.pdf",
-                    data=primer_data,
-                    file_name="Primer.pdf",
-                    mime="application/pdf",
-                    key="dl_primer",
-                )
-        with col_dl2:
-            if "AUX 2016.pdf" in docs_pdfs:
-                with open(os.path.join("docs", "AUX 2016.pdf"), "rb") as f:
-                    aux_data = f.read()
-                st.download_button(
-                    "⬇️ Download AUX 2016.pdf",
-                    data=aux_data,
-                    file_name="AUX 2016.pdf",
-                    mime="application/pdf",
-                    key="dl_aux",
-                )
 
     # ── Section B: Book Index / ToC ──────────
     st.subheader("🗂️ B. Book Index / Table of Contents (for Chapter Names)")
@@ -455,14 +439,22 @@ elif page == "📄 Step 1: OCR Extraction":
     with col3:
         index_pdf = st.file_uploader(
             "Upload index PDF (or same book)",
-            type=["pdf"],
+            type=["pdf", "txt"],
             key="index_pdf_upload",
             help="Pages containing the table of contents or chapter index",
         )
+        if docs_pdfs:
+            index_doc_choice = st.selectbox(
+                "Or choose a PDF from the repo docs folder",
+                ["None"] + docs_pdfs,
+                key="index_pdf_docs",
+            )
+        else:
+            index_doc_choice = "None"
     with col4:
         st.markdown("**Page range for index:**")
-        idx_start = st.number_input("Start page", min_value=0, value=0, key="idx_start")
-        idx_end_raw = st.number_input("End page (0 = all)", min_value=0, value=0, key="idx_end")
+        idx_start = st.number_input("Start page", min_value=0, value=0, step=1, key="idx_start")
+        idx_end_raw = st.number_input("End page (leave 0 for all pages)", min_value=0, value=0, step=1, key="idx_end")
         idx_end = None if idx_end_raw == 0 else int(idx_end_raw)
 
     # ── Section C: Question Paper ────────────
@@ -471,7 +463,7 @@ elif page == "📄 Step 1: OCR Extraction":
     with col5:
         paper_pdf = st.file_uploader(
             "Upload question paper PDF",
-            type=["pdf"],
+            type=["pdf", "txt"],
             key="paper_pdf_upload",
             help="The paper from which we extract numbered questions (Q1, Q2, ...)",
         )
@@ -487,8 +479,8 @@ elif page == "📄 Step 1: OCR Extraction":
             paper_doc_choice = "None"
     with col6:
         st.markdown("**Page range:**")
-        paper_start = st.number_input("Start page", min_value=0, value=0, key="paper_start")
-        paper_end_raw = st.number_input("End page (0 = all)", min_value=0, value=0, key="paper_end")
+        paper_start = st.number_input("Start page", min_value=0, value=0, step=1, key="paper_start")
+        paper_end_raw = st.number_input("End page (leave 0 for all pages)", min_value=0, value=0, step=1, key="paper_end")
         paper_end = None if paper_end_raw == 0 else int(paper_end_raw)
 
     st.markdown("---")
@@ -496,15 +488,18 @@ elif page == "📄 Step 1: OCR Extraction":
     if st.button("🔍 Run OCR & Extract", key="run_ocr_btn", type="primary"):
         pipeline = st.session_state.pipeline
 
+        chosen = [
+            p for p in (
+                book_pdf, index_pdf, paper_pdf,
+            ) if p is not None
+        ] + [
+            f"docs/{c}" for c in (book_doc_choice, index_doc_choice, paper_doc_choice) if c != "None"
+        ]
+
         if pipeline is None:
             st.error("Pipeline not initialised. Check OCR dependencies.")
-        elif (
-            book_pdf is None
-            and paper_pdf is None
-            and book_doc_choice == "None"
-            and paper_doc_choice == "None"
-        ):
-            st.warning("Please upload at least one PDF or choose one from the docs folder.")
+        elif not chosen:
+            st.warning("Please upload at least one file or choose one from the docs folder.")
         else:
             progress = st.progress(0)
             status = st.empty()
@@ -512,11 +507,18 @@ elif page == "📄 Step 1: OCR Extraction":
 
             # ── Extract index (chapter names) ──
             chapter_map = {}
+            index_path = None
+            delete_index_tmp = False
             if index_pdf is not None:
+                index_path = save_uploaded_pdf(index_pdf, "index")
+                delete_index_tmp = True
+            elif index_doc_choice != "None":
+                index_path = os.path.join("docs", index_doc_choice)
+
+            if index_path is not None:
                 status.info("🗂️ Extracting chapter names from index…")
-                tmp_idx = save_uploaded_pdf(index_pdf, "index")
                 try:
-                    raw_index = pipeline.ocr_processor.extract_from_pdf(tmp_idx, idx_start, idx_end)
+                    raw_index = pipeline.ocr_processor.extract_text(index_path, idx_start, idx_end)
                     chapter_map = parse_chapter_index(raw_index)
                     successful_extractions += 1
                     if chapter_map:
@@ -529,8 +531,8 @@ elif page == "📄 Step 1: OCR Extraction":
                 except Exception as e:
                     show_extraction_error("Index", e)
                 finally:
-                    if os.path.exists(tmp_idx):
-                        os.remove(tmp_idx)
+                    if delete_index_tmp and index_path and os.path.exists(index_path):
+                        os.remove(index_path)
             st.session_state.chapter_map = chapter_map
             progress.progress(20)
 
@@ -547,7 +549,7 @@ elif page == "📄 Step 1: OCR Extraction":
             if book_src_path is not None:
                 status.info("📖 Extracting exercise questions from textbook…")
                 try:
-                    raw_text = pipeline.ocr_processor.extract_from_pdf(book_src_path, book_start, book_end)
+                    raw_text = pipeline.ocr_processor.extract_text(book_src_path, book_start, book_end)
                     exercises = pipeline.ocr_processor.extract_exercise_questions(raw_text)
                     successful_extractions += 1
 
@@ -587,7 +589,7 @@ elif page == "📄 Step 1: OCR Extraction":
             if paper_src_path is not None:
                 status.info("📋 Extracting questions from question paper…")
                 try:
-                    raw_text = pipeline.ocr_processor.extract_from_pdf(paper_src_path, paper_start, paper_end)
+                    raw_text = pipeline.ocr_processor.extract_text(paper_src_path, paper_start, paper_end)
                     questions = pipeline.ocr_processor.extract_question_papers(raw_text)
                     successful_extractions += 1
 
@@ -696,7 +698,16 @@ elif page == "🧠 Step 2: Train Model":
             st.dataframe(train_df.head(), use_container_width=True)
 
     if train_df is not None:
-        # Validate columns
+        # Normalize schema so any CSV column layout works (BOM, aliases, casing)
+        try:
+            from app.bert_analyzer import normalize_dataframe
+            train_df = normalize_dataframe(train_df, require_label=True)
+        except Exception as e:
+            st.error(f"❌ {e}\n\nExpected columns: a question column (`Question Text`/`question`) "
+                     "and a label column (`Chapter_name`/`Chapter`/`label`).")
+            train_df = None
+
+    if train_df is not None:
         required_cols = {"Question Text", "Chapter_name"}
         if not required_cols.issubset(set(train_df.columns)):
             st.error(f"❌ CSV must contain columns: {required_cols}. Found: {set(train_df.columns)}")
@@ -743,7 +754,7 @@ elif page == "🧠 Step 2: Train Model":
                     progress.progress(90)
 
                     # Save model
-                    model_dir = "data/models/bert_model"
+                    model_dir = MODEL_DIR
                     st.session_state.pipeline.save_bert_model(model_dir)
                     progress.progress(100)
 
@@ -769,12 +780,17 @@ elif page == "📊 Step 3: Analyze & Results":
 
     # Load pre-trained model if not already loaded
     if not st.session_state.model_trained:
-        try:
-            st.session_state.pipeline.load_bert_model("data/models/bert_model")
-            st.session_state.model_trained = True
-            st.success("Pre-trained model loaded successfully.")
-        except Exception as e:
-            st.error(f"Failed to load pre-trained model: {e}. Please ensure the model files exist in data/models/bert_model.")
+        with st.spinner("Loading model…"):
+            try:
+                st.session_state.pipeline.load_bert_model(MODEL_DIR)
+                st.session_state.model_trained = True
+                st.success("Pre-trained model loaded successfully.")
+            except Exception as e:
+                st.error(
+                    f"Failed to load pre-trained model: {e}. "
+                    "Ensure the model files exist in data/models/bert_model, "
+                    "or train a model in Step 2."
+                )
 
     st.markdown("---")
 
@@ -802,7 +818,14 @@ elif page == "📊 Step 3: Analyze & Results":
         )
         if uploaded_paper:
             paper_df = pd.read_csv(uploaded_paper)
-            st.dataframe(paper_df.head(), use_container_width=True)
+            try:
+                from app.bert_analyzer import normalize_dataframe
+                paper_df = normalize_dataframe(paper_df, require_label=False)
+            except Exception as e:
+                st.error(f"❌ {e}\nExpected a question column such as `Question Text`.")
+                paper_df = None
+            if paper_df is not None:
+                st.dataframe(paper_df.head(), use_container_width=True)
 
     if paper_df is not None and "Question Text" not in paper_df.columns:
         st.error("❌ CSV must contain a 'Question Text' column.")
@@ -899,12 +922,13 @@ elif page == "🎯 Step 4: Model Accuracy":
     )
 
     if not st.session_state.model_trained:
-        try:
-            st.session_state.pipeline.load_bert_model("data/models/bert_model")
-            st.session_state.model_trained = True
-            st.success("Model loaded successfully.")
-        except Exception as e:
-            st.warning(f"Could not load model: {e}")
+        with st.spinner("Loading model…"):
+            try:
+                st.session_state.pipeline.load_bert_model(MODEL_DIR)
+                st.session_state.model_trained = True
+                st.success("Model loaded successfully.")
+            except Exception as e:
+                st.warning(f"Could not load model: {e}")
 
     st.markdown("---")
 
