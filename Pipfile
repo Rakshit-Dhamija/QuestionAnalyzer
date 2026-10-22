@@ -20,7 +20,6 @@ threading = "*"
 time = "*"
 pil = "*"
 re = "*"
-csv = "*"
 
 [dev-packages]
 
