@@ -18,7 +18,7 @@ import streamlit as st
 import pandas as pd
 from pathlib import Path
 
-from app.pipeline import QuestionAnalysisPipeline
+from pipeline import QuestionAnalysisPipeline
 
 # ─────────────────────────────────────────────
 # Page config
